@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { create, findAll } from "@/lib/notes.service";
-import type { Note, NoteEntry } from "@/lib/types";
+import { findAll } from "@/lib/notes.service";
+import type { Note } from "@/lib/types";
 
 export default function NotesList() {
 
@@ -18,36 +18,26 @@ export default function NotesList() {
     load();
   }, [])
 
-  const createNote = async () => {
-
-    const newEntry: NoteEntry = {
-      title: "random title",
-      body: "random body"
-    }
-
-    await create(newEntry)
-
-    const newValues = await findAll()
-    setNotes(newValues)
-  }
-
 
   return (
-    <div>
-      <h1>List</h1>
-      <div className="flex flex-col gap-y-2">
-        {
-          notes.map(note => {
+    <div className="grid flex-grow w-full grid-cols-1 gap-5 overflow-y-auto lg:grid-cols-2 xl:grid-cols-3">
+      {
+        notes.map(note => {
 
-            return (
-              <div key={note.id}>
-                <p>{note.title}</p>
-              </div>
-            )
-          })
-        }
-      </div>
-      <button onClick={createNote}>insert</button>
+          return (
+            <div
+              className="flex flex-col w-full p-5 transition-colors border rounded-lg hover:bg-white/10 hover:border-white/15 gap-y-3 h-fit border-white/10 bg-white/5"
+              key={note.id}>
+              <header className="flex items-center justify-between gap-x-10">
+                <p className="text-xl capitalize font-geist-mono">{note.title}</p>
+                <span className="text-neutral-400">{note.createdAt}</span>
+              </header>
+              <p className="truncate text-neutral-200">{note.body}</p>
+            </div>
+          )
+        })
+      }
     </div>
+
   )
 }

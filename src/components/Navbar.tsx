@@ -1,14 +1,20 @@
-import { navLinks } from "@/lib/constants";
+"use client"
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import clsx from "clsx"
+import { navLinks } from "@/lib/constants";
 
 export default function Navbar() {
 
+  const pathname = usePathname()
+
   return (
-    <nav className="px-6 py-5 flex flex-col gap-y-10">
+    <nav className="flex flex-col px-6 py-5 min-w-60 gap-y-10">
 
-      <p className="font-geist-mono text-xl">Taking Notes</p>
+      <p className="text-2xl font-geist-mono">Taking Notes</p>
 
-      <ul className="flex flex-col gap-y-4 flex-grow">
+      <ul className="flex flex-col flex-grow gap-y-4">
         {
           navLinks.map(link => {
 
@@ -16,9 +22,12 @@ export default function Navbar() {
               <Link
                 key={link.id}
                 href={link.href}
-                className="py-2 px-3 rounded-md border border-transparent transition-colors hover:border-white/5"
+                className={clsx(
+                  "flex items-center px-3 py-2 capitalize transition-colors border border-transparent rounded-md gap-x-4 hover:bg-white/5 hover:border-white/5",
+                  {"bg-white/5 border-white/5": pathname === link.href}
+                )}
               >
-                <svg className="w-10 h-10">
+                <svg className="w-10 h-10 fill-neutral-50">
                   <use xlinkHref={`/sprites.svg#${link.icon}`} />
                 </svg>
                 {link.label}
