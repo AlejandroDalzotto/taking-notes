@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme"
 
 const config: Config = {
   content: [
@@ -12,6 +13,10 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      fontFamily: {
+        "geist-sans": ["var(--font-geist-sans)", ...defaultTheme.fontFamily.sans],
+        "geist-mono": ["var(--font-geist-mono)", ...defaultTheme.fontFamily.mono]
+      }
     },
   },
   plugins: [],
