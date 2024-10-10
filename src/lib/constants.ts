@@ -12,5 +12,11 @@ export const navLinks: NavLink[] = [
     label: "notes",
     href: "/notes",
     icon: "list"
+  },
+  {
+    id: "5620f70f-3fdc-44e8-a2d7-1bf21c0e0788",
+    label: "create",
+    href: "/create",
+    icon: "add"
   }
 ]

@@ -16,7 +16,7 @@ export const findAll = async (): Promise<Note[]> => {
 }
 
 export const create = async (values: NoteEntry) => {
-  
+
   const now = new Date().toLocaleDateString()
   const id = crypto.randomUUID()
 
@@ -32,4 +32,16 @@ export const create = async (values: NoteEntry) => {
   await writeTextFile("db.json", JSON.stringify([...previousValues, newEntry]), {
     baseDir: BaseDirectory.AppLocalData
   })
+}
+
+export const remove = async (id: string) => {
+
+  const allValues = await findAll()
+
+  const newValues = allValues.filter(value => value.id !== id)
+
+  await writeTextFile("db.json", JSON.stringify(newValues), {
+    baseDir: BaseDirectory.AppLocalData
+  })
+
 }
