@@ -37,7 +37,7 @@ export default function NotesList() {
               className="relative flex flex-col w-full p-5 transition-colors border rounded-lg group/card hover:bg-white/10 hover:border-white/15 gap-y-3 h-fit border-white/10 bg-white/5"
               key={note.id}>
               <header className="flex items-center justify-between gap-x-10">
-                <p className="text-xl capitalize font-geist-mono">{note.title}</p>
+                <p className="text-xl capitalize font-geist-mono truncate">{note.title}</p>
                 <span className="text-neutral-400">{note.createdAt}</span>
               </header>
               <p className="truncate text-neutral-200">{note.body}</p>
