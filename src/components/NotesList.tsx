@@ -28,7 +28,7 @@ export default function NotesList() {
           return (
             <Link
               href={`/note?slug=${note.slug}`}
-              className="relative flex flex-col w-full p-5 transition-colors border rounded-lg group/card hover:bg-white/10 hover:border-white/15 gap-y-3 h-fit border-white/10 bg-white/5"
+              className="relative flex flex-col w-full p-5 transition-colors border rounded-lg hover:bg-white/10 hover:border-white/15 gap-y-3 h-fit border-white/10 bg-white/5"
               key={note.id}>
               <header className="flex items-center justify-between gap-x-10">
                 <p className="text-xl capitalize font-geist-mono truncate">{note.title}</p>
