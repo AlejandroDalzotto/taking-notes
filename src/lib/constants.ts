@@ -20,3 +20,5 @@ export const navLinks: NavLink[] = [
     icon: "add"
   }
 ]
+
+export const markdownManager = "markdown-manager.json"
