@@ -3,7 +3,7 @@ import MarkdownContent from "@/components/MarkdownContent";
 import { getMarkdownInformation, remove } from "@/lib/markdown.service";
 import { MarkdownFileInformation } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 // Apparently not supported.
 // https://nextjs.org/docs/app/building-your-application/deploying/static-exports#unsupported-features
@@ -16,11 +16,11 @@ import { useEffect, useState } from "react";
 //   )
 // }
 
-export default function SingleNotePage() {
-
+const ContentWrapped = () => {
+  const [markdownInformation, setMarkdownInformation] = useState<MarkdownFileInformation | null>(null)
   const searchParams = useSearchParams()
   const slug = searchParams.get("slug")!
-  const [markdownInformation, setMarkdownInformation] = useState<MarkdownFileInformation | null>(null)
+
 
   useEffect(() => {
 
@@ -40,7 +40,7 @@ export default function SingleNotePage() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col p-1 gap-y-2">
+    <>
       <header className="w-full">
         <h1 className="font-geist-mono text-lg">File title:{" "}
           {markdownInformation ? (
@@ -64,6 +64,17 @@ export default function SingleNotePage() {
         </button>
         {markdownInformation && <span className="font-geist-mono text-sm text-neutral-400">last update: {markdownInformation.updatedAt}</span>}
       </footer>
+    </>
+  )
+}
+
+export default function SingleNotePage() {
+
+  return (
+    <div className="w-full h-full flex flex-col p-1 gap-y-2">
+      <Suspense>
+        <ContentWrapped />
+      </Suspense>
     </div>
   )
 }
