@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMarkdownListInformation, remove } from "@/lib/markdown.service";
+import { getMarkdownListInformation } from "@/lib/markdown.service";
 import type { MarkdownFileInformation } from "@/lib/types";
 import Link from "next/link";
 
@@ -19,14 +19,6 @@ export default function NotesList() {
     load();
   }, [])
 
-  const deleteNote = async (slug: string) => {
-
-    await remove(slug)
-
-    const newData = await getMarkdownListInformation()
-    setNotes(newData)
-  }
-
 
   return (
     <div className="grid content-start flex-grow w-full grid-cols-1 gap-5 overflow-y-auto lg:grid-cols-2 xl:grid-cols-3">
@@ -42,15 +34,6 @@ export default function NotesList() {
                 <p className="text-xl capitalize font-geist-mono truncate">{note.title}</p>
                 <span className="text-neutral-400">{note.createdAt}</span>
               </header>
-              <button
-                onClick={() => deleteNote(note.slug)}
-                title={`delete note: ${note.title}`}
-                className="absolute w-8 h-8 p-1 transition-all border rounded-md opacity-0 hover:scale-110 bottom-2 right-2 border-white/5 bg-white/5 group-hover/card:opacity-100"
-              >
-                <svg className="w-full h-full fill-neutral-50">
-                  <use xlinkHref="/sprites.svg#delete" />
-                </svg>
-              </button>
             </Link>
           )
         })

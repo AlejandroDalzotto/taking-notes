@@ -29,6 +29,15 @@ export const getMarkdownListInformation = async (): Promise<MarkdownFileInformat
   return data;
 }
 
+export const getMarkdownInformation = async (slug: string): Promise<MarkdownFileInformation> => {
+  const rawData = await readTextFile(markdownManager, { baseDir: BaseDirectory.AppLocalData })
+  const data: MarkdownFileInformation[] = JSON.parse(rawData)
+
+  const markdown = data.find(value => value.slug === slug)!
+
+  return markdown;
+
+}
 /**
  * Get the content of a markdown created.
  */
@@ -42,11 +51,11 @@ export const getMarkdown = async (slug: string) => {
 }
 
 export const create = async (values: MarkdownEntry) => {
-  const encoder = new TextEncoder()
+  const encoder = new TextEncoder();
 
-  const now = new Date().toLocaleString()
-  const id = crypto.randomUUID()
-  const slug = values.title.toLowerCase().replaceAll(" ", "-")
+  const now = new Date().toLocaleString();
+  const id = crypto.randomUUID();
+  const slug = values.title.toLowerCase().replaceAll(" ", "-");
 
   const newEntry: MarkdownFileInformation = {
     id,
@@ -54,29 +63,32 @@ export const create = async (values: MarkdownEntry) => {
     slug,
     createdAt: now,
     updatedAt: now
-  }
+  };
 
-  const previousValues = await getMarkdownListInformation()
-  const markdownContent = encoder.encode(values.content)
+  const previousValues = await getMarkdownListInformation();
+  const markdownContent = encoder.encode(values.content);
 
-  await writeTextFile(markdownManager, JSON.stringify([...previousValues, newEntry]), {
-    baseDir: BaseDirectory.AppLocalData
-  })
-
-  await writeFile(`${slug}.md`, markdownContent, {
+  const writeManagerFilePromise = writeTextFile(markdownManager, JSON.stringify([...previousValues, newEntry]), {
     baseDir: BaseDirectory.AppLocalData
   });
-}
+
+  const writeMarkdownFilePromise = writeFile(`${slug}.md`, markdownContent, {
+    baseDir: BaseDirectory.AppLocalData
+  });
+
+  await Promise.all([writeManagerFilePromise, writeMarkdownFilePromise]);
+};
+
 
 export const remove = async (slug: string) => {
+  const allValues = await getMarkdownListInformation();
+  const newValues = allValues.filter(value => value.slug !== slug);
 
-  const allValues = await getMarkdownListInformation()
-  const newValues = allValues.filter(value => value.slug !== slug)
-
-  await writeTextFile(markdownManager, JSON.stringify(newValues), {
+  const writeManagerFilePromise = writeTextFile(markdownManager, JSON.stringify(newValues), {
     baseDir: BaseDirectory.AppLocalData
-  })
+  });
 
-  await removeFile(`${slug}.md`, { baseDir: BaseDirectory.AppLocalData })
+  const removeMarkdownFilePromise = removeFile(`${slug}.md`, { baseDir: BaseDirectory.AppLocalData });
 
-}
+  await Promise.all([writeManagerFilePromise, removeMarkdownFilePromise]);
+};
