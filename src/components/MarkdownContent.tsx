@@ -20,7 +20,7 @@ export default function MarkdownContent({ slug }: { slug: string }) {
 
   return (
     <Suspense fallback={<Loading />}>
-      <Markdown className="markdown">
+      <Markdown className="markdown prose prose-invert prose-img:rounded-lg prose-video:rounded-lg">
         {content}
       </Markdown>
     </Suspense>

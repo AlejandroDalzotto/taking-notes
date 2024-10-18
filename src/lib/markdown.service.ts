@@ -9,6 +9,7 @@ import {
 } from "@tauri-apps/plugin-fs"
 import type { MarkdownEntry, MarkdownFileInformation } from "./types"
 import { markdownManager } from "@/lib/constants"
+import { validateNoteBody } from "@/lib/validation.service"
 
 /**
  * A method that will return a list of information about the files already created.
@@ -28,6 +29,8 @@ export const getMarkdownListInformation = async (): Promise<MarkdownFileInformat
 
   return data;
 }
+// TODO: Implement a search bar.
+// export const getMarkdownListInformationByFilter = async (searchTerm: string) => {}
 
 export const getMarkdownInformation = async (slug: string): Promise<MarkdownFileInformation> => {
   const rawData = await readTextFile(markdownManager, { baseDir: BaseDirectory.AppLocalData })
@@ -50,12 +53,19 @@ export const getMarkdown = async (slug: string) => {
   return data
 }
 
-export const create = async (values: MarkdownEntry) => {
+export const create = async (values: MarkdownEntry): Promise<[Error | null, string]> => {
   const encoder = new TextEncoder();
 
   const now = new Date().toLocaleString();
   const id = crypto.randomUUID();
   const slug = values.title.toLowerCase().replaceAll(" ", "-");
+
+  // Validating fields
+  const [areFieldsValid, improvementsToConsider] = validateNoteBody(values)
+
+  if (!areFieldsValid) {
+    return [new Error(improvementsToConsider!), improvementsToConsider!]
+  }
 
   const newEntry: MarkdownFileInformation = {
     id,
@@ -65,30 +75,42 @@ export const create = async (values: MarkdownEntry) => {
     updatedAt: now
   };
 
-  const previousValues = await getMarkdownListInformation();
-  const markdownContent = encoder.encode(values.content);
+  try {
+    const previousValues = await getMarkdownListInformation();
+    const markdownContent = encoder.encode(values.content);
 
-  const writeManagerFilePromise = writeTextFile(markdownManager, JSON.stringify([...previousValues, newEntry]), {
-    baseDir: BaseDirectory.AppLocalData
-  });
+    await Promise.all([
+      writeTextFile(markdownManager, JSON.stringify([...previousValues, newEntry]), {
+        baseDir: BaseDirectory.AppLocalData
+      }),
+      writeFile(`${slug}.md`, markdownContent, {
+        baseDir: BaseDirectory.AppLocalData
+      })
+    ]);
 
-  const writeMarkdownFilePromise = writeFile(`${slug}.md`, markdownContent, {
-    baseDir: BaseDirectory.AppLocalData
-  });
-
-  await Promise.all([writeManagerFilePromise, writeMarkdownFilePromise]);
+    return [null, "Note created successfully."];
+  } catch (err) {
+    return [err instanceof Error ? err : new Error(String(err)), "An error occurred while creating the note."];
+  }
 };
 
 
-export const remove = async (slug: string) => {
+export const remove = async (slug: string): Promise<[Error | null, string]> => {
   const allValues = await getMarkdownListInformation();
   const newValues = allValues.filter(value => value.slug !== slug);
 
-  const writeManagerFilePromise = writeTextFile(markdownManager, JSON.stringify(newValues), {
-    baseDir: BaseDirectory.AppLocalData
-  });
+  try {
+    await Promise.all([
+      writeTextFile(markdownManager, JSON.stringify(newValues), {
+        baseDir: BaseDirectory.AppLocalData
+      }),
+      removeFile(`${slug}.md`, {
+        baseDir: BaseDirectory.AppLocalData
+      })
+    ]);
 
-  const removeMarkdownFilePromise = removeFile(`${slug}.md`, { baseDir: BaseDirectory.AppLocalData });
-
-  await Promise.all([writeManagerFilePromise, removeMarkdownFilePromise]);
+    return [null, "Note removed successfully."];
+  } catch (err) {
+    return [err instanceof Error ? err : new Error(String(err)), "An error occurred while removing the note."];
+  }
 };

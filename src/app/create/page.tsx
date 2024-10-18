@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 import { create } from "@/lib/markdown.service";
 import type { MarkdownEntry } from "@/lib/types";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function CreateNotePage() {
 
@@ -18,8 +19,14 @@ export default function CreateNotePage() {
       content,
     }
 
-    await create(newEntry)
-    router.push("/notes")
+    const [anErrorHasHappened, message] = await create(newEntry)
+
+    if (!anErrorHasHappened) {
+      toast.success(message)
+      router.push("/notes")
+    }
+
+    toast.error(message)
   }
 
   return (
