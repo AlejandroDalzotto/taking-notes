@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMarkdownListInformation } from "@/lib/markdown.service";
+import { getMarkdownListInformation, getMarkdownListInformationByTerm } from "@/lib/markdown.service";
 import type { MarkdownFileInformation } from "@/lib/types";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function NotesList() {
 
   const [notes, setNotes] = useState<MarkdownFileInformation[]>([])
+  const searchParams = useSearchParams()
+  const search = searchParams.get("search") ?? ""
 
   useEffect(() => {
     const load = async () => {
@@ -19,6 +22,23 @@ export default function NotesList() {
     load();
   }, [])
 
+  useEffect(() => {
+
+    const loadFilteredValues = async () => {
+
+      if (!search) {
+        const data = await getMarkdownListInformation()
+        setNotes(data)
+        return
+      }
+
+      const filteredValues = await getMarkdownListInformationByTerm(search);
+
+      setNotes(filteredValues)
+    }
+
+    loadFilteredValues();
+  }, [search])
 
   return (
     <div className="grid content-start flex-grow w-full grid-cols-1 gap-5 overflow-y-auto lg:grid-cols-2 xl:grid-cols-3">

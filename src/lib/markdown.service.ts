@@ -29,8 +29,15 @@ export const getMarkdownListInformation = async (): Promise<MarkdownFileInformat
 
   return data;
 }
-// TODO: Implement a search bar.
-// export const getMarkdownListInformationByFilter = async (searchTerm: string) => {}
+// Return a filtered list of all markdown's information. Mainly used by search bar.
+export const getMarkdownListInformationByTerm = async (searchTerm: string) => {
+  const rawData = await readTextFile(markdownManager, { baseDir: BaseDirectory.AppLocalData })
+  const data: MarkdownFileInformation[] = JSON.parse(rawData)
+
+  const filteredResult = data.filter(value => value.title.toLowerCase().includes(searchTerm))
+
+  return filteredResult
+}
 
 export const getMarkdownInformation = async (slug: string): Promise<MarkdownFileInformation> => {
   const rawData = await readTextFile(markdownManager, { baseDir: BaseDirectory.AppLocalData })

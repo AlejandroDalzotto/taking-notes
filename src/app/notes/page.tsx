@@ -1,4 +1,5 @@
 import Loading from "@/components/Loading";
+import SearchBar from "@/components/SearchBar";
 import { lazy, Suspense } from "react"
 
 const NotesList = lazy(() => import("@/components/NotesList"));
@@ -10,6 +11,11 @@ export default function NotesPage() {
         <h1 className="mb-5 text-3xl font-geist-mono">Notes list</h1>
         <p className="mb-5 text-lg">There you have all the notes you&apos;ve written.</p>
       </header>
+      <section className="w-full">
+        <Suspense>
+          <SearchBar />
+        </Suspense>
+      </section>
       <Suspense fallback={<Loading />} >
         <NotesList />
       </Suspense>
