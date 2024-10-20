@@ -2,6 +2,7 @@
 import MarkdownContent from "@/components/MarkdownContent";
 import { getMarkdownInformation, remove } from "@/lib/markdown.service";
 import { MarkdownFileInformation } from "@/lib/types";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -54,14 +55,25 @@ const ContentWrapped = () => {
         <MarkdownContent slug={slug} />
       </section>
       <footer className="w-full flex items-center justify-between">
-        <button
-          onClick={deleteNote}
-          className="w-8 h-8 p-1 transition-all border rounded-md hover:scale-110 border-white/5 bg-white/5"
-        >
-          <svg className="w-full h-full fill-neutral-50">
-            <use xlinkHref="/sprites.svg#delete" />
-          </svg>
-        </button>
+        <div className="flex gap-x-4 items-center">
+          <button
+            onClick={deleteNote}
+            className="w-8 h-8 p-1 transition-all border rounded-md hover:scale-110 border-white/5 bg-white/5"
+          >
+            <svg className="w-full h-full fill-neutral-50">
+              <use xlinkHref="/sprites.svg#delete" />
+            </svg>
+          </button>
+          <Link
+            title={`Edit ${markdownInformation?.title ?? "undefined"}`}
+            href={`/edit?slug=${slug}`}
+            className="w-8 h-8 p-1 transition-all border rounded-md hover:scale-110 border-white/5 bg-white/5"
+          >
+            <svg className="w-full h-full fill-neutral-50">
+              <use xlinkHref="/sprites.svg#edit" />
+            </svg>
+          </Link>
+        </div>
         {markdownInformation && <span className="font-geist-mono text-sm text-neutral-400">last update: {markdownInformation.updatedAt}</span>}
       </footer>
     </>
