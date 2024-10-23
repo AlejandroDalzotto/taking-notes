@@ -1,5 +1,5 @@
 "use client";
-import { create, getMarkdown } from "@/lib/markdown.service";
+import { edit, getMarkdown } from "@/lib/markdown.service";
 import type { MarkdownEntry } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useState } from "react";
@@ -31,7 +31,7 @@ const ContentWrapped = () => {
       content,
     }
 
-    const [anErrorHasHappened, message] = await create(newEntry)
+    const [anErrorHasHappened, message] = await edit(slug, newEntry)
 
     if (!anErrorHasHappened) {
       toast.success(message)
