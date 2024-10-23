@@ -95,7 +95,7 @@ export const create = async (values: MarkdownEntry): Promise<[Error | null, stri
       })
     ]);
 
-    return [null, "Note created successfully."];
+    return [null, "Note edited successfully."];
   } catch (err) {
     return [err instanceof Error ? err : new Error(String(err)), "An error occurred while creating the note."];
   }
