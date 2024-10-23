@@ -36,6 +36,8 @@ const ContentWrapped = () => {
     if (!anErrorHasHappened) {
       toast.success(message)
       router.push("/notes")
+
+      return
     }
 
     toast.error(message)
@@ -60,7 +62,7 @@ const ContentWrapped = () => {
           placeholder="Write about something..."
           className="flex-grow px-3 overflow-y-auto py-4 text-lg transition-colors bg-transparent outline-none text-start placeholder:text-neutral-400 hover:bg-white/5"
         />
-        <button className="px-3 py-2 mt-5 ml-auto transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit">create</button>
+        <button className="px-3 py-2 mt-5 ml-auto transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit">save</button>
       </form>
     </div>
   )

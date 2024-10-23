@@ -24,6 +24,8 @@ export default function CreateNotePage() {
     if (!anErrorHasHappened) {
       toast.success(message)
       router.push("/notes")
+
+      return
     }
 
     toast.error(message)
