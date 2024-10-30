@@ -1,5 +1,5 @@
 "use client";
-import { edit, getMarkdown } from "@/lib/markdown.service";
+import { edit, getMarkdown, getMarkdownInformation } from "@/lib/markdown.service";
 import type { MarkdownEntry } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useState } from "react";
@@ -8,8 +8,8 @@ import { toast } from "sonner";
 const ContentWrapped = () => {
 
   const searchParams = useSearchParams()
-  const slug = searchParams.get("slug") ?? ""
-  const [title, setTitle] = useState<string>(slug.replaceAll("-", " "))
+  const tag = searchParams.get("tag") ?? ""
+  const [title, setTitle] = useState<string>("")
   const [content, setContent] = useState<string>("")
   const router = useRouter()
 
@@ -17,12 +17,16 @@ const ContentWrapped = () => {
   useEffect(() => {
 
     const load = async () => {
-      const makdownContent = await getMarkdown(slug)
+      const [makdownContent, information] = await Promise.all([
+        getMarkdown(tag),
+        getMarkdownInformation(tag),
+      ])
 
       setContent(makdownContent)
+      setTitle(information.title)
     }
     load();
-  }, [slug])
+  }, [tag])
 
   const handleAction = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -31,7 +35,7 @@ const ContentWrapped = () => {
       content,
     }
 
-    const [anErrorHasHappened, message] = await edit(slug, newEntry)
+    const [anErrorHasHappened, message] = await edit(tag, newEntry)
 
     if (!anErrorHasHappened) {
       toast.success(message)

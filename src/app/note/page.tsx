@@ -2,13 +2,14 @@
 import MarkdownContent from "@/components/MarkdownContent";
 import { getMarkdownInformation, remove } from "@/lib/markdown.service";
 import { MarkdownFileInformation } from "@/lib/types";
+import { getLocalDateString } from "@/lib/utils";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 // Apparently not supported.
 // https://nextjs.org/docs/app/building-your-application/deploying/static-exports#unsupported-features
-// export default function SingleNotePage({ params }: { params: { slug: string } }) {
+// export default function SingleNotePage({ params }: { params: { tag: string } }) {
 
 //   return (
 //     <div className="w-full h-full overflow-y-auto p-2 border rounded-lg border-white/5">
@@ -20,21 +21,21 @@ import { Suspense, useEffect, useState } from "react";
 const ContentWrapped = () => {
   const [markdownInformation, setMarkdownInformation] = useState<MarkdownFileInformation | null>(null)
   const searchParams = useSearchParams()
-  const slug = searchParams.get("slug")!
+  const tag = searchParams.get("tag")!
 
 
   useEffect(() => {
 
     const load = async () => {
-      const information = await getMarkdownInformation(slug)
+      const information = await getMarkdownInformation(tag)
       setMarkdownInformation(information)
     }
     load();
-  }, [slug])
+  }, [tag])
 
   const deleteNote = async () => {
 
-    await remove(slug)
+    await remove(tag)
 
     // Redirect to notes page.
     window.history.back()
@@ -43,7 +44,7 @@ const ContentWrapped = () => {
   return (
     <>
       <header className="w-full">
-        <h1 className="font-geist-mono text-lg">File title:{" "}
+        <h1 className="font-geist-mono text-lg">Note&apos;s title:{" "}
           {markdownInformation ? (
             <span className="text-rose-600">{markdownInformation.title}</span>
           ) : (
@@ -52,7 +53,7 @@ const ContentWrapped = () => {
         </h1>
       </header>
       <section className="w-full h-full overflow-y-auto p-2 lg:px-6 lg:py-4 border rounded-lg border-white/5">
-        <MarkdownContent slug={slug} />
+        <MarkdownContent tag={tag} />
       </section>
       <footer className="w-full flex items-center justify-between">
         <div className="flex gap-x-4 items-center">
@@ -66,7 +67,7 @@ const ContentWrapped = () => {
           </button>
           <Link
             title={`Edit ${markdownInformation?.title ?? "undefined"}`}
-            href={`/edit?slug=${slug}`}
+            href={`/edit?tag=${tag}`}
             className="w-8 h-8 p-1 transition-all border rounded-md hover:scale-110 border-white/5 bg-white/5"
           >
             <svg className="w-full h-full fill-neutral-50">
@@ -74,7 +75,7 @@ const ContentWrapped = () => {
             </svg>
           </Link>
         </div>
-        {markdownInformation && <span className="font-geist-mono text-sm text-neutral-400">last update: {markdownInformation.updatedAt}</span>}
+        {markdownInformation && <span className="font-geist-mono text-sm text-neutral-400">last update: {getLocalDateString(markdownInformation.updatedAt)}</span>}
       </footer>
     </>
   )

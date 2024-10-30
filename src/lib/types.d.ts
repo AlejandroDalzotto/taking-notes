@@ -3,11 +3,13 @@ export interface MarkdownEntry {
   content: string;
 }
 
+export type Tag = string;
+
 export interface MarkdownFileInformation extends Omit<MarkdownEntry, "content"> {
   id: string;
-  slug: string;
-  createdAt: string;
-  updatedAt: string;
+  tag: Tag;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface NavLink {

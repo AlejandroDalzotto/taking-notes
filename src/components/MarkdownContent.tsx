@@ -5,17 +5,17 @@ import { Suspense, useEffect, useState } from "react";
 import Loading from "@/components/Loading";
 import Markdown from "react-markdown";
 
-export default function MarkdownContent({ slug }: { slug: string }) {
+export default function MarkdownContent({ tag }: { tag: string }) {
 
   const [content, setContent] = useState("")
 
   useEffect(() => {
     const load = async () => {
-      const markdownContent = await getMarkdown(slug)
+      const markdownContent = await getMarkdown(tag)
       setContent(markdownContent)
     }
     load();
-  }, [slug])
+  }, [tag])
 
 
   return (

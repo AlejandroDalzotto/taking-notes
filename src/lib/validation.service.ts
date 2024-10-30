@@ -6,7 +6,7 @@ export const validateNoteBody = (entry: MarkdownEntry): [boolean, string | null]
     false,
     "Please provide the values for the title and the content."
   ]
-  if (entry.title.length < 3 || entry.title.length > 25) return [
+  if (entry.title.length < 3 || entry.title.length > 45) return [
     false,
     "The title's length must be between 3 and 25."
   ]
