@@ -1,6 +1,8 @@
 "use client";
+import { MAX_LENGTH_TITLE, MIN_LENGTH_TITLE } from "@/lib/constants";
 import { edit, getMarkdown, getMarkdownInformation } from "@/lib/markdown.service";
 import type { MarkdownEntry } from "@/lib/types";
+import clsx from "clsx";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -50,14 +52,21 @@ const ContentWrapped = () => {
   return (
     <div className="flex flex-col items-start max-h-full min-h-full p-4 pt-20">
       <form onSubmit={(e) => handleAction(e)} className="flex flex-col flex-grow w-full">
-        <input
-          autoComplete="off"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          name="title"
-          placeholder="Title..."
-          className="px-3 py-4 text-xl transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/5"
-        />
+        <div className="relative w-full">
+          <input
+            autoComplete="off"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            name="title"
+            placeholder="Title..."
+            className="px-3 py-4 text-xl w-full transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/5"
+          />
+          <span className={clsx(
+            "absolute top-1/2 -translate-y-1/2 right-3 text-lg font-bold transition-colors",
+            { "text-red-500/40": title.length < MIN_LENGTH_TITLE || title.length > MAX_LENGTH_TITLE },
+            { "text-neutral-600": title.length >= MIN_LENGTH_TITLE && title.length <= MAX_LENGTH_TITLE }
+          )}>{title.length}</span>
+        </div>
         <textarea
           autoComplete="off"
           value={content}

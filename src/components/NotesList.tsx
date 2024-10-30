@@ -53,7 +53,7 @@ export default function NotesList() {
               key={note.id}>
               <header className="relative flex items-center justify-between gap-x-10">
                 <p className="text-xl capitalize max-w-[50%] whitespace-nowrap font-geist-mono truncate">{note.title}</p>
-                <span className="text-neutral-400">{getLocalDateString(note.createdAt)}</span>
+                <span title={`created at: ${getLocalDateString(note.createdAt)}`} className="text-neutral-400 truncate">{getLocalDateString(note.createdAt)}</span>
               </header>
             </Link>
           )
