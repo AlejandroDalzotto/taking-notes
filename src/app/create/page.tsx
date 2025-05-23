@@ -6,7 +6,8 @@ import type { MarkdownEntry } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import clsx from "clsx";
-import { MAX_LENGTH_TITLE, MIN_LENGTH_TITLE } from "@/lib/constants";
+import { MAX_LENGTH_TITLE, MIN_LENGTH_CONTENT, MIN_LENGTH_TITLE } from "@/lib/constants";
+import { wordCounter } from "@/lib/utils";
 
 export default function CreateNotePage() {
 
@@ -43,7 +44,7 @@ export default function CreateNotePage() {
             onChange={(e) => setTitle(e.target.value)}
             name="title"
             placeholder="Title..."
-            className="px-3 py-4 text-xl w-full transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/5"
+            className="w-full px-3 py-4 pr-10 text-xl transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/5"
           />
           <span className={clsx(
             "absolute top-1/2 -translate-y-1/2 right-3 text-lg font-bold transition-colors",
@@ -51,14 +52,21 @@ export default function CreateNotePage() {
             { "text-neutral-600": title.length >= MIN_LENGTH_TITLE && title.length <= MAX_LENGTH_TITLE }
           )}>{title.length}</span>
         </div>
-        <textarea
-          autoComplete="off"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          name="content"
-          placeholder="Write about something..."
-          className="flex-grow px-3 overflow-y-auto py-4 text-lg transition-colors bg-transparent outline-none text-start placeholder:text-neutral-400 hover:bg-white/5"
-        />
+        <div className="relative flex flex-grow">
+          <textarea
+            autoComplete="off"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            name="content"
+            placeholder="Write about something..."
+            className="flex-grow px-3 py-4 pr-10 overflow-y-auto text-lg transition-colors bg-transparent outline-none resize-none text-start placeholder:text-neutral-400 hover:bg-white/5"
+          />
+          <span className={clsx(
+            "absolute top-3 right-3 text-lg font-bold transition-colors",
+            { "text-red-500/40": content.length < MIN_LENGTH_CONTENT },
+            { "text-neutral-600": content.length >= MIN_LENGTH_CONTENT }
+          )}>{wordCounter(content)}</span>
+        </div>
         <button className="px-3 py-2 mt-5 ml-auto transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit">create</button>
       </form>
     </div>
