@@ -20,9 +20,11 @@ export default function MarkdownContent({ tag }: { tag: string }) {
 
   return (
     <Suspense fallback={<Loading />}>
-      <Markdown className="markdown prose prose-invert prose-img:rounded-lg prose-video:rounded-lg">
-        {content}
-      </Markdown>
+      <div className="markdown prose prose-invert prose-img:rounded-lg prose-video:rounded-lg">
+        <Markdown>
+          {content}
+        </Markdown>
+      </div>
     </Suspense>
   )
 }
