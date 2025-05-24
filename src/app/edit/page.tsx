@@ -51,7 +51,7 @@ const ContentWrapped = () => {
 
   return (
     <div className="flex flex-col items-start max-h-full min-h-full p-4 pt-20">
-      <form onSubmit={(e) => handleAction(e)} className="flex flex-col flex-grow w-full">
+      <form onSubmit={(e) => handleAction(e)} className="flex flex-col grow w-full">
         <div className="relative w-full">
           <input
             autoComplete="off"
@@ -73,7 +73,7 @@ const ContentWrapped = () => {
           onChange={(e) => setContent(e.target.value)}
           name="content"
           placeholder="Write about something..."
-          className="flex-grow px-3 overflow-y-auto py-4 text-lg transition-colors bg-transparent outline-none text-start placeholder:text-neutral-400 hover:bg-white/5"
+          className="grow px-3 overflow-y-auto py-4 text-lg transition-colors bg-transparent outline-none text-start placeholder:text-neutral-400 hover:bg-white/5"
         />
         <button className="px-3 py-2 mt-5 ml-auto transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit">save</button>
       </form>

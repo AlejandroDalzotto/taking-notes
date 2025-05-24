@@ -42,7 +42,7 @@ export default function NotesList() {
   }, [search])
 
   return (
-    <div className="grid content-start flex-grow w-full grid-cols-1 gap-5 overflow-y-auto lg:grid-cols-2 xl:grid-cols-3">
+    <div className="grid content-start grow w-full grid-cols-1 gap-5 overflow-y-auto lg:grid-cols-2 xl:grid-cols-3">
       {
         notes.map(note => {
 

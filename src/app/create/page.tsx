@@ -36,7 +36,7 @@ export default function CreateNotePage() {
 
   return (
     <div className="flex flex-col items-start max-h-full min-h-full p-4 pt-20">
-      <form onSubmit={(e) => handleAction(e)} className="flex flex-col flex-grow w-full">
+      <form onSubmit={(e) => handleAction(e)} className="flex flex-col grow w-full">
         <div className="relative w-full">
           <input
             autoComplete="off"
@@ -52,14 +52,14 @@ export default function CreateNotePage() {
             { "text-neutral-600": title.length >= MIN_LENGTH_TITLE && title.length <= MAX_LENGTH_TITLE }
           )}>{title.length}</span>
         </div>
-        <div className="relative flex flex-grow">
+        <div className="relative flex grow">
           <textarea
             autoComplete="off"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             name="content"
             placeholder="Write about something..."
-            className="flex-grow px-3 py-4 pr-10 overflow-y-auto text-lg transition-colors bg-transparent outline-none resize-none text-start placeholder:text-neutral-400 hover:bg-white/5"
+            className="grow px-3 py-4 pr-10 overflow-y-auto text-lg transition-colors bg-transparent outline-none resize-none text-start placeholder:text-neutral-400 hover:bg-white/5"
           />
           <span className={clsx(
             "absolute top-3 right-3 text-lg font-bold transition-colors",

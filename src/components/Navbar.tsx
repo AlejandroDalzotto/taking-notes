@@ -14,7 +14,7 @@ export default function Navbar() {
 
       <p className="text-2xl font-geist-mono">Taking Notes</p>
 
-      <ul className="flex flex-col flex-grow gap-y-4">
+      <ul className="flex flex-col grow gap-y-4">
         {
           navLinks.map(link => {
 
