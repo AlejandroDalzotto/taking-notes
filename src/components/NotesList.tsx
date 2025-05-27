@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getNotesMetadata, getNotesByTerm } from "@/lib/notes.service";
-import type { NoteMetadata } from "@/lib/types";
+import type { NoteMetadata } from "@/lib/definitions";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getLocalDateString } from "@/lib/utils";

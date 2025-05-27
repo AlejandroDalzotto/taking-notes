@@ -4,7 +4,7 @@ import ErrorDisplay from "@/components/ErrorDisplay";
 import Loading from "@/components/Loading";
 import MarkdownContent from "@/components/MarkdownContent";
 import { getNoteContent, getNoteMetadata, removeNote } from "@/lib/notes.service";
-import { FileExtension, NoteMetadata } from "@/lib/types";
+import { FileExtension, NoteMetadata } from "@/lib/definitions";
 import { getLocalDateString } from "@/lib/utils";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";

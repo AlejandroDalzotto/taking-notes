@@ -1,4 +1,4 @@
-import { NavLink } from "./types";
+import { NavLink, FileExtension } from "@/lib/definitions";
 
 export const navLinks: NavLink[] = [
   {
@@ -20,6 +20,19 @@ export const navLinks: NavLink[] = [
     icon: "add"
   }
 ];
+
+export const extensionsOptions = [
+  {
+    value: FileExtension.MARKDOWN,
+    label: "markdown",
+    colorClass: "text-indigo-500",
+  },
+  {
+    value: FileExtension.PLAINTEXT,
+    label: "plain text",
+    colorClass: "text-orange-500",
+  }
+]
 
 export const MIN_LENGTH_TITLE = 3;
 export const MAX_LENGTH_TITLE = 45;

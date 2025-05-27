@@ -1,43 +1,49 @@
 "use client";
-import { MAX_LENGTH_TITLE, MIN_LENGTH_TITLE } from "@/lib/constants";
-import { edit, getNoteContent, getMarkdownInformation } from "@/lib/notes.service";
-import type { NoteEntry } from "@/lib/types";
-import clsx from "clsx";
+import ErrorDisplay from "@/components/ErrorDisplay";
+import { editNote, getNoteContent, getNoteMetadata } from "@/lib/notes.service";
+import type { FileExtension, NoteEntry } from "@/lib/definitions";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, Suspense, useEffect, useState } from "react";
+import { type FormEvent, Suspense } from "react";
 import { toast } from "sonner";
+import { useAsyncResult } from "@/hooks/useAsyncResult";
 
 const ContentWrapped = () => {
+  const searchParams = useSearchParams();
+  const tag = searchParams.get("tag") ?? "";
+  const extension = searchParams.get("ext") ?? "";
 
-  const searchParams = useSearchParams()
-  const tag = searchParams.get("tag") ?? ""
-  const [title, setTitle] = useState<string>("")
-  const [content, setContent] = useState<string>("")
+  const {
+    error: contentError,
+    data: content,
+    loading: loadingContent,
+  } = useAsyncResult(
+    () => getNoteContent(tag, extension),
+    [tag, extension]
+  );
+
+  const {
+    error: metadataError,
+    data: metadata,
+    loading: loadingMetadata,
+  } = useAsyncResult(
+    () => getNoteMetadata(tag),
+    [tag]
+  );
+
   const router = useRouter()
-
-
-  useEffect(() => {
-
-    const load = async () => {
-      const [makdownContent, information] = await Promise.all([
-        getNoteContent(tag),
-        getMarkdownInformation(tag),
-      ])
-
-      setContent(makdownContent)
-      setTitle(information.title)
-    }
-    load();
-  }, [tag])
 
   const handleAction = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const newEntry: NoteEntry = {
-      title,
-      content,
-    }
 
-    const [anErrorHasHappened, message] = await edit(tag, newEntry)
+    const formData = new FormData(e.currentTarget);
+
+    const newEntry: NoteEntry = {
+      title: formData.get("title") as string,
+      content: formData.get("content") as string,
+      fileExtension: extension as FileExtension,
+    };
+
+    const [anErrorHasHappened, message] = await editNote(tag, newEntry)
 
     if (!anErrorHasHappened) {
       toast.success(message)
@@ -49,28 +55,29 @@ const ContentWrapped = () => {
     toast.error(message)
   }
 
+  if (loadingContent || loadingMetadata) return <div>Loading...</div>;
+  if (contentError || metadataError)
+    return (
+      <ErrorDisplay
+        message={[contentError?.message, metadataError?.message]
+          .filter(Boolean)
+          .join("\n")}
+      />
+    );
+
   return (
     <div className="flex flex-col items-start max-h-full min-h-full p-4 pt-20">
       <form onSubmit={(e) => handleAction(e)} className="flex flex-col grow w-full">
-        <div className="relative w-full">
-          <input
-            autoComplete="off"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            name="title"
-            placeholder="Title..."
-            className="px-3 py-4 text-xl w-full transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/5"
-          />
-          <span className={clsx(
-            "absolute top-1/2 -translate-y-1/2 right-3 text-lg font-bold transition-colors",
-            { "text-red-500/40": title.length < MIN_LENGTH_TITLE || title.length > MAX_LENGTH_TITLE },
-            { "text-neutral-600": title.length >= MIN_LENGTH_TITLE && title.length <= MAX_LENGTH_TITLE }
-          )}>{title.length}</span>
-        </div>
-        <textarea
+        <input
+          defaultValue={metadata?.title}
           autoComplete="off"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
+          name="title"
+          placeholder="Title..."
+          className="px-3 py-4 text-xl w-full transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/5"
+        />
+        <textarea
+          defaultValue={content ?? ""}
+          autoComplete="off"
           name="content"
           placeholder="Write about something..."
           className="grow px-3 overflow-y-auto py-4 text-lg transition-colors bg-transparent outline-none text-start placeholder:text-neutral-400 hover:bg-white/5"
