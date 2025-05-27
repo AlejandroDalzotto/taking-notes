@@ -17,7 +17,7 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "Taking Notes",
-  description: "Your best way to keep in mind your thoughts through saving it.",
+  description: "Your best way to keep in mind your thoughts through a easy-to-use UI.",
 };
 
 export default function RootLayout({

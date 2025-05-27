@@ -1,7 +1,7 @@
 import { MAX_LENGTH_TITLE, MIN_LENGTH_CONTENT, MIN_LENGTH_TITLE } from "./constants"
-import type { MarkdownEntry } from "./types"
+import type { NoteEntry } from "./types"
 
-export const validateNoteBody = (entry: MarkdownEntry): [boolean, string | null] => {
+export const validateNoteBody = (entry: NoteEntry): [false, string] | [true, null] => {
 
   if (!entry.title || !entry.content) return [
     false,

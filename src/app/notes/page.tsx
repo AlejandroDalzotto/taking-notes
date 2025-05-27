@@ -1,8 +1,6 @@
-import Loading from "@/components/Loading";
+import NotesList from "@/components/NotesList";
 import SearchBar from "@/components/SearchBar";
-import { lazy, Suspense } from "react"
-
-const NotesList = lazy(() => import("@/components/NotesList"));
+import { Suspense } from "react"
 
 export default function NotesPage() {
   return (
@@ -16,9 +14,7 @@ export default function NotesPage() {
           <SearchBar />
         </Suspense>
       </section>
-      <Suspense fallback={<Loading />} >
-        <NotesList />
-      </Suspense>
+      <NotesList />
     </div>
   )
 }

@@ -1,30 +1,28 @@
 "use client";
 
-import { getMarkdown } from "@/lib/markdown.service"
-import { Suspense, useEffect, useState } from "react";
-import Loading from "@/components/Loading";
 import Markdown from "react-markdown";
+import Link from "next/link";
 
-export default function MarkdownContent({ tag }: { tag: string }) {
-
-  const [content, setContent] = useState("")
-
-  useEffect(() => {
-    const load = async () => {
-      const markdownContent = await getMarkdown(tag)
-      setContent(markdownContent)
-    }
-    load();
-  }, [tag])
-
+export default function MarkdownContent({ content }: { content: string }) {
 
   return (
-    <Suspense fallback={<Loading />}>
-      <div className="markdown prose prose-invert prose-img:rounded-lg prose-video:rounded-lg">
-        <Markdown>
-          {content}
-        </Markdown>
-      </div>
-    </Suspense>
+    <div className="markdown prose prose-invert prose-img:rounded-lg prose-video:rounded-lg">
+      <Markdown components={{
+        a(props) {
+          const href = props.href ?? "#"
+          const text = props.children
+
+          return <Link
+            target="_blank"
+            className="text-blue-500"
+            href={href}
+          >
+            {text}
+          </Link>
+        }
+      }}>
+        {content}
+      </Markdown>
+    </div>
   )
 }

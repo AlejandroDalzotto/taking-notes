@@ -1,13 +1,17 @@
-export interface MarkdownEntry {
-  title: string;
-  content: string;
+
+export enum FileExtension {
+  MARKDOWN = "md",
+  PLAINTEXT = "txt"
 }
 
-export type Tag = string;
+export interface NoteEntry {
+  title: string;
+  content: string;
+  fileExtension: FileExtension;
+}
 
-export interface MarkdownFileInformation extends Omit<MarkdownEntry, "content"> {
-  id: string;
-  tag: Tag;
+export interface NoteMetadata extends Omit<NoteEntry, "content"> {
+  tag: string;
   createdAt: number;
   updatedAt: number;
 }

@@ -7,53 +7,7 @@
   ],
   "permissions": [
     "core:default",
-    {
-      "identifier": "fs:allow-write-text-file",
-      "allow": [
-        {
-          "path": "$APPLOCALDATA/*"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-read-text-file",
-      "allow": [
-        {
-          "path": "$APPLOCALDATA/*"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-exists",
-      "allow": [
-        {
-          "path": "$APPLOCALDATA/*"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-write-file",
-      "allow": [
-        {
-          "path": "$APPLOCALDATA/*"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-read-file",
-      "allow": [
-        {
-          "path": "$APPLOCALDATA/*"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-remove",
-      "allow": [
-        {
-          "path": "$APPLOCALDATA/*"
-        }
-      ]
-    }
+    "opener:allow-default-urls",
+    "opener:allow-open-url"
   ]
 }

@@ -1,7 +1,7 @@
 "use client";
 import { MAX_LENGTH_TITLE, MIN_LENGTH_TITLE } from "@/lib/constants";
-import { edit, getMarkdown, getMarkdownInformation } from "@/lib/markdown.service";
-import type { MarkdownEntry } from "@/lib/types";
+import { edit, getNoteContent, getMarkdownInformation } from "@/lib/notes.service";
+import type { NoteEntry } from "@/lib/types";
 import clsx from "clsx";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useState } from "react";
@@ -20,7 +20,7 @@ const ContentWrapped = () => {
 
     const load = async () => {
       const [makdownContent, information] = await Promise.all([
-        getMarkdown(tag),
+        getNoteContent(tag),
         getMarkdownInformation(tag),
       ])
 
@@ -32,7 +32,7 @@ const ContentWrapped = () => {
 
   const handleAction = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const newEntry: MarkdownEntry = {
+    const newEntry: NoteEntry = {
       title,
       content,
     }

@@ -1,13 +1,25 @@
 "use client"
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx"
 import { navLinks } from "@/lib/constants";
+import type { MouseEvent } from "react";
 
 export default function Navbar() {
 
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleNavigation = (e: MouseEvent<HTMLAnchorElement>, nagivateTo: string) => {
+    e.preventDefault()
+
+    if (nagivateTo === pathname) {
+      return
+    }
+
+    router.push(nagivateTo)
+  }
 
   return (
     <nav className="flex flex-col px-6 py-5 min-w-60 gap-y-10">
@@ -20,11 +32,13 @@ export default function Navbar() {
 
             return (
               <Link
+                onClick={(e) => handleNavigation(e, link.href)}
+                aria-disabled={pathname === link.href}
                 key={link.id}
                 href={link.href}
                 className={clsx(
                   "flex items-center px-3 py-2 capitalize transition-colors border border-transparent rounded-md gap-x-4 hover:bg-white/5 hover:border-white/5",
-                  {"bg-white/5 border-white/5": pathname === link.href}
+                  { "bg-white/5 border-white/5": pathname === link.href }
                 )}
               >
                 <svg className="w-10 h-10 fill-neutral-50">
