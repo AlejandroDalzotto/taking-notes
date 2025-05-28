@@ -14,7 +14,9 @@ export default function NotesPage() {
           <SearchBar />
         </Suspense>
       </section>
-      <NotesList />
+      <Suspense>
+        <NotesList />
+      </Suspense>
     </div>
   )
 }

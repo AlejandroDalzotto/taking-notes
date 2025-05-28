@@ -10,9 +10,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAsyncResult } from "@/hooks/useAsyncResult";
+import { Suspense } from "react";
 
-export default function SingleNotePage() {
-
+const Wrapper = () => {
   const searchParams = useSearchParams()
   const tag = searchParams.get("tag")!
   const extension = searchParams.get("ext")! as FileExtension
@@ -60,7 +60,6 @@ export default function SingleNotePage() {
           .join("\n")}
       />
     );
-
   return (
     <div className="w-full h-full flex flex-col p-1 gap-y-2">
       <header className="w-full">
@@ -94,5 +93,14 @@ export default function SingleNotePage() {
         {metadata && <span className="font-geist-mono text-sm text-neutral-400">last update: {getLocalDateString(metadata.updatedAt)}</span>}
       </footer>
     </div>
+  )
+};
+
+export default function SingleNotePage() {
+
+  return (
+    <Suspense>
+      <Wrapper />
+    </Suspense>
   )
 }

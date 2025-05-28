@@ -7,7 +7,7 @@ type AsyncResult<E, T> =
 
 export function useAsyncResult<E, T>(
   fn: () => Promise<[E, null] | [null, T]>,
-  deps: any[] = []
+  deps: string[] = []
 ): AsyncResult<E, T> {
   const [state, setState] = useState<AsyncResult<E, T>>({
     error: null,
