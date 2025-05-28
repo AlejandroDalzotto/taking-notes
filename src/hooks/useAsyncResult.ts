@@ -21,7 +21,6 @@ export function useAsyncResult<E, T>(
       if (error) setState({ error, data: null, loading: false });
       else setState({ error: null, data: data as T, loading: false });
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   return state;
