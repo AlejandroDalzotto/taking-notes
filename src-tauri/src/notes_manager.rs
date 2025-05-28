@@ -46,7 +46,10 @@ impl NotesManager {
         Ok(file_content)
     }
 
-    pub fn read_note_metadata(notes_manager_path: String, tag: String) -> Result<NoteMetadata, std::io::Error> {
+    pub fn read_note_metadata(
+        notes_manager_path: String,
+        tag: String,
+    ) -> Result<NoteMetadata, std::io::Error> {
         if !fs::exists(&notes_manager_path)? {
             return Err(Error::new(
                 ErrorKind::NotFound,
@@ -68,7 +71,9 @@ impl NotesManager {
         Ok(file_data)
     }
 
-    pub fn read_notes_metadata(notes_manager_path: String) -> Result<Vec<NoteMetadata>, std::io::Error> {
+    pub fn read_notes_metadata(
+        notes_manager_path: String,
+    ) -> Result<Vec<NoteMetadata>, std::io::Error> {
         if !fs::exists(&notes_manager_path)? {
             return Ok(Vec::new());
         }
@@ -80,10 +85,7 @@ impl NotesManager {
         Ok(files_data)
     }
 
-    pub fn write_note(
-        file_path: String,
-        content: String,
-    ) -> Result<bool, std::io::Error> {
+    pub fn write_note(file_path: String, content: String) -> Result<bool, std::io::Error> {
         fs::write(file_path, content)?;
 
         Ok(true)
@@ -119,7 +121,10 @@ impl NotesManager {
         entries.push(new_entry);
 
         // Write updated entries list (markdown-manager)
-        fs::write(&notes_manager_path, serde_json::to_string(&entries).unwrap())?;
+        fs::write(
+            &notes_manager_path,
+            serde_json::to_string(&entries).unwrap(),
+        )?;
 
         Ok(true)
     }
@@ -160,7 +165,10 @@ impl NotesManager {
         }
 
         // Write updated entries list (markdown-manager)
-        fs::write(&notes_manager_path, serde_json::to_string(&entries).unwrap())?;
+        fs::write(
+            &notes_manager_path,
+            serde_json::to_string(&entries).unwrap(),
+        )?;
 
         Ok(true)
     }
@@ -171,7 +179,10 @@ impl NotesManager {
         Ok(true)
     }
 
-    pub fn remove_note_metadata(notes_manager_path: String, tag: String) -> Result<bool, std::io::Error> {
+    pub fn remove_note_metadata(
+        notes_manager_path: String,
+        tag: String,
+    ) -> Result<bool, std::io::Error> {
         // Read previous entries (if file exists)
         let entries = if fs::exists(&notes_manager_path)? {
             let raw_json = fs::read_to_string(&notes_manager_path)?;

@@ -28,11 +28,13 @@ pub async fn get_note_metadata(
 
     let file_data = NotesManager::read_note_metadata(manager_path, tag);
 
-    file_data.map_err(|e| NoteError::new(
-        "Error trying to get note information",
-        &e.to_string(),
-        "get_note_metadata",
-    ))
+    file_data.map_err(|e| {
+        NoteError::new(
+            "Error trying to get note information",
+            &e.to_string(),
+            "get_note_metadata",
+        )
+    })
 }
 
 #[command]
@@ -48,11 +50,13 @@ pub async fn get_note_content(
     let file_path = path.to_str().unwrap().to_string();
     let file_content = NotesManager::read_note_content(file_path);
 
-    file_content.map_err(|e| NoteError::new(
-        "Error trying to get note content",
-        &e.to_string(),
-        "get_note_content",
-    ))
+    file_content.map_err(|e| {
+        NoteError::new(
+            "Error trying to get note content",
+            &e.to_string(),
+            "get_note_content",
+        )
+    })
 }
 
 #[command]
@@ -70,11 +74,13 @@ pub async fn create_note(
 
     let has_markdown_note_succeeded = NotesManager::write_note(file_path, content);
 
-    has_markdown_note_succeeded.map_err(|e| NoteError::new(
-        "Error trying to create note file",
-        &e.to_string(),
-        "create_note",
-    ))
+    has_markdown_note_succeeded.map_err(|e| {
+        NoteError::new(
+            "Error trying to create note file",
+            &e.to_string(),
+            "create_note",
+        )
+    })
 }
 
 #[command]
@@ -86,13 +92,16 @@ pub async fn create_note_metadata(
 ) -> Result<bool, NoteError> {
     let manager_path = app_state.manager_path.to_string();
 
-    let has_markdown_manager_succeeded = NotesManager::write_note_metadata(manager_path, tag, title, file_extension);
+    let has_markdown_manager_succeeded =
+        NotesManager::write_note_metadata(manager_path, tag, title, file_extension);
 
-    has_markdown_manager_succeeded.map_err(|e| NoteError::new(
-        "Error trying to create note metadata",
-        &e.to_string(),
-        "create_note_metadata",
-    ))
+    has_markdown_manager_succeeded.map_err(|e| {
+        NoteError::new(
+            "Error trying to create note metadata",
+            &e.to_string(),
+            "create_note_metadata",
+        )
+    })
 }
 
 #[command]
@@ -104,11 +113,13 @@ pub async fn search_notes_by_term(
 
     let files_data = NotesManager::search_notes_metadata(manager_path, term);
 
-    files_data.map_err(|e| NoteError::new(
-        "Error trying to search notes",
-        &e.to_string(),
-        "search_notes_by_term",
-    ))
+    files_data.map_err(|e| {
+        NoteError::new(
+            "Error trying to search notes",
+            &e.to_string(),
+            "search_notes_by_term",
+        )
+    })
 }
 
 #[command]
@@ -126,11 +137,13 @@ pub async fn edit_note(
 
     let result = NotesManager::edit_note_content(file_path, content);
 
-    result.map_err(|e| NoteError::new(
-        "Error trying to edit note file",
-        &e.to_string(),
-        "edit_note",
-    ))
+    result.map_err(|e| {
+        NoteError::new(
+            "Error trying to edit note file",
+            &e.to_string(),
+            "edit_note",
+        )
+    })
 }
 
 #[command]
@@ -143,11 +156,13 @@ pub async fn edit_note_metadata(
 
     let files_data = NotesManager::edit_note_metadata(manager_path, tag, title);
 
-    files_data.map_err(|e| NoteError::new(
-        "Error trying to edit note metadata",
-        &e.to_string(),
-        "edit_note_metadata",
-    ))
+    files_data.map_err(|e| {
+        NoteError::new(
+            "Error trying to edit note metadata",
+            &e.to_string(),
+            "edit_note_metadata",
+        )
+    })
 }
 
 #[command]
@@ -164,11 +179,13 @@ pub async fn remove_note(
 
     let result = NotesManager::remove_note(file_path);
 
-    result.map_err(|e| NoteError::new(
-        "Error trying to remove note file",
-        &e.to_string(),
-        "remove_note",
-    ))
+    result.map_err(|e| {
+        NoteError::new(
+            "Error trying to remove note file",
+            &e.to_string(),
+            "remove_note",
+        )
+    })
 }
 
 #[command]
@@ -180,9 +197,11 @@ pub async fn remove_note_metadata(
 
     let files_data = NotesManager::remove_note_metadata(manager_path, tag);
 
-    files_data.map_err(|e| NoteError::new(
-        "Error trying to remove note metadata",
-        &e.to_string(),
-        "remove_note_metadata",
-    ))
+    files_data.map_err(|e| {
+        NoteError::new(
+            "Error trying to remove note metadata",
+            &e.to_string(),
+            "remove_note_metadata",
+        )
+    })
 }

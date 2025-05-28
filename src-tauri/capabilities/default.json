@@ -8,6 +8,12 @@
   "permissions": [
     "core:default",
     "opener:allow-default-urls",
-    "opener:allow-open-url"
+    "opener:allow-open-url",
+    "updater:default",
+    "process:default"
+  ],
+  "platforms": [
+    "windows",
+    "linux"
   ]
 }
