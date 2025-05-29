@@ -60,6 +60,7 @@ const Wrapper = () => {
           .join("\n")}
       />
     );
+
   return (
     <div className="w-full h-full flex flex-col p-1 gap-y-2">
       <header className="w-full">
@@ -68,7 +69,13 @@ const Wrapper = () => {
         </h1>
       </header>
       <section className="w-full h-full overflow-y-auto p-2 lg:px-6 lg:py-4 border rounded-lg border-white/5">
-        {content && <MarkdownContent content={content} />}
+        {content && metadata && metadata.fileExtension === FileExtension.MARKDOWN ? (
+          <MarkdownContent content={content} />
+        ) : (
+          <div className="whitespace-pre-line prose prose-invert prose-img:rounded-lg prose-video:rounded-lg">
+            {content}
+          </div>
+        )}
       </section>
       <footer className="w-full flex items-center justify-between">
         <div className="flex gap-x-4 items-center">
