@@ -1,4 +1,14 @@
 @import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@theme {
+  --font-geist-sans: var(--font-geist-sans);
+  --font-geist-mono: var(--font-geist-mono);
+}
+
+*: {
+  font-family: var(--font-geist-sans);
+}
 
 .markdown > * {
   all: revert;
