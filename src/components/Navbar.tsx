@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx"
 import { navLinks } from "@/lib/constants";
 import type { MouseEvent } from "react";
+import Image from "next/image";
 
 export default function Navbar() {
 
@@ -24,7 +25,15 @@ export default function Navbar() {
   return (
     <nav className="flex flex-col px-6 py-5 min-w-60 gap-y-10">
 
-      <p className="text-2xl font-geist-mono">Taking Notes</p>
+      <div className="flex items-center gap-x-5">
+        <Image
+        width={50}
+        height={50}
+        alt="app_icon"
+        src="/icon.png"
+        />
+        <p className="text-2xl font-geist-mono">Taking Notes</p>
+      </div>
 
       <ul className="flex flex-col grow gap-y-4">
         {
