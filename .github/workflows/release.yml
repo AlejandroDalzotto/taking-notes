@@ -69,6 +69,24 @@ jobs:
       - name: setup bun
         uses: oven-sh/setup-bun@v2
 
+        # Cache Bun dependencies
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+
+      # Cache Rust dependencies
+      - name: Cache cargo registry and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
