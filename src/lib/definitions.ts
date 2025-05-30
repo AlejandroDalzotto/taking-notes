@@ -4,6 +4,8 @@ export enum FileExtension {
   PLAINTEXT = "txt"
 }
 
+export type Icon = "home" | "list" | "add";
+
 export interface NoteEntry {
   title: string;
   content: string;
@@ -20,5 +22,5 @@ export interface NavLink {
   id: string;
   label: string;
   href: string;
-  icon: string;
+  icon: Icon;
 }

@@ -6,6 +6,7 @@ import clsx from "clsx"
 import { navLinks } from "@/lib/constants";
 import type { MouseEvent } from "react";
 import Image from "next/image";
+import { IconAdd, IconHome, IconList } from "./Icons";
 
 export default function Navbar() {
 
@@ -27,10 +28,10 @@ export default function Navbar() {
 
       <div className="flex items-center gap-x-5">
         <Image
-        width={50}
-        height={50}
-        alt="app_icon"
-        src="/icon.png"
+          width={50}
+          height={50}
+          alt="app_icon"
+          src="/icon.png"
         />
         <p className="text-2xl font-geist-mono">Taking Notes</p>
       </div>
@@ -50,9 +51,9 @@ export default function Navbar() {
                   { "bg-white/5 border-white/5": pathname === link.href }
                 )}
               >
-                <svg className="w-10 h-10 fill-neutral-50">
-                  <use xlinkHref={`/sprites.svg#${link.icon}`} />
-                </svg>
+                {link.icon === "home" && <IconHome size={40} className="fill-neutral-50" />}
+                {link.icon === "add" && <IconAdd size={40} className="fill-neutral-50" />}
+                {link.icon === "list" && <IconList size={40} className="fill-neutral-50" />}
                 {link.label}
               </Link>
             )
