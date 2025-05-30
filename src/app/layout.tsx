@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "sonner";
 import UpdaterProvider from "@/context/update-provider";
+import Grainy from "@/components/Grainy";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex font-geist-sans w-screen relative p-4 h-screen text-neutral-50 bg-neutral-950`}
       >
+        <Grainy />
         <UpdaterProvider>
           <Navbar />
           <main className="w-full h-full">
