@@ -2,6 +2,7 @@
 
 import Markdown from "react-markdown";
 import Link from "next/link";
+import { highlight } from "sugar-high";
 
 export default function MarkdownContent({ content }: { content: string }) {
 
@@ -19,6 +20,13 @@ export default function MarkdownContent({ content }: { content: string }) {
           >
             {text}
           </Link>
+        },
+        code(props) {
+          const { children, ...rest } = props
+          const codeHTML = highlight(children?.toString() ?? "")
+          return (
+            <code dangerouslySetInnerHTML={{ __html: codeHTML }} {...rest} />
+          )
         }
       }}>
         {content}

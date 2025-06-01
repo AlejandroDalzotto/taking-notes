@@ -10,6 +10,18 @@
   font-family: var(--font-geist-sans);
 }
 
+:root {
+  --sh-class: #82aaff;
+  --sh-identifier: #d6deeb;
+  --sh-sign: #7fdbca;
+  --sh-property: #addb67;
+  --sh-entity: #ffcb8b;
+  --sh-jsxliterals: #c792ea;
+  --sh-string: #ecc48d;
+  --sh-keyword: #ff5874;
+  --sh-comment: #5c6773;
+}
+
 .markdown > * {
   all: revert;
 }
