@@ -25,3 +25,62 @@
 .markdown > * {
   all: revert;
 }
+
+/* Markdown preview dark mode styles */
+.md-block-code {
+  color: #b5e853;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+}
+
+.md-html-tag {
+  color: #7ec3fa;
+}
+
+.md-bold {
+  @apply text-rose-500 font-bold
+}
+
+.md-italic {
+  color: #f7c873;
+  font-style: italic;
+}
+
+.md-inline-code {
+  color: #b5e853;
+}
+
+.md-heading {
+  color: #7ec3fa;
+  font-weight: bold;
+}
+
+.md-list {
+  color: #e1e1e6;
+}
+
+.md-link-text {
+  color: #7ec3fa;
+  text-decoration: underline;
+}
+
+.md-link-url {
+  color: #b5e853;
+  opacity: 0.8;
+}
+
+.md-blockquote {
+  color: #a1a1aa;
+}
+
+.md-table {
+  color: #e1e1e6;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+}
+
+.md-hr {
+  color: #444857;
+}
+
+.md-html-comment {
+  color: #6e7681;
+}

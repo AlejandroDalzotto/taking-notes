@@ -1,15 +1,19 @@
 "use client";
 
-import { type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { createNote } from "@/lib/notes.service";
-import type { FileExtension, NoteEntry } from "@/lib/definitions";
+import { FileExtension, NoteEntry } from "@/lib/definitions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { extensionsOptions } from "@/lib/constants";
+import MDEditor from "@/components/MDEditor";
 
 export default function CreateNotePage() {
 
   const router = useRouter()
+  const [extension, setExtension] = useState<FileExtension>(FileExtension.MARKDOWN);
+
+  const [content, setContent] = useState("");
 
   const handleAction = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -20,7 +24,6 @@ export default function CreateNotePage() {
       content: formData.get("content") as string,
       fileExtension: formData.get("extension") as FileExtension,
     };
-
     const [error, message] = await createNote(newEntry)
 
     if (!error) {
@@ -35,15 +38,16 @@ export default function CreateNotePage() {
 
   return (
     <div className="flex flex-col items-start max-h-full min-h-full p-4 pt-20">
-      <form onSubmit={(e) => handleAction(e)} className="flex flex-col grow w-full">
+      <form onSubmit={(e) => handleAction(e)} className="flex flex-col w-full grow">
         <div className="flex gap-x-4">
           <input
+            spellCheck={false}
             autoComplete="off"
             name="title"
             placeholder="Title..."
-            className="w-full px-3 py-4 pr-10 text-xl transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/5"
+            className="w-full p-4 text-xl font-mono transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/[0.01] focus:bg-white/5"
           />
-          <select name="extension" className="outline-none border-2 peer rounded-md font-extrabold">
+          <select onChange={(e) => setExtension(e.target.value as FileExtension)} name="extension" className="font-extrabold outline-none transition-colors hover:bg-white/[0.01] focus:bg-white/5">
             {
               extensionsOptions.map(extension => {
                 return (
@@ -59,12 +63,19 @@ export default function CreateNotePage() {
             }
           </select>
         </div>
-        <textarea
-          autoComplete="off"
-          name="content"
-          placeholder="Write about something..."
-          className="grow px-3 py-4 pr-10 overflow-y-auto text-lg transition-colors bg-transparent outline-none resize-none text-start placeholder:text-neutral-400 hover:bg-white/5"
-        />
+        {extension === FileExtension.MARKDOWN ? (
+          <MDEditor content={content} set={setContent} />
+        ) : (
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            autoComplete="off"
+            name="content"
+            spellCheck={false}
+            placeholder="Write about something..."
+            className="p-4 overflow-y-auto font-mono text-lg transition-colors bg-transparent outline-none resize-none grow text-start placeholder:text-neutral-400 hover:bg-white/5"
+          />
+        )}
         <button className="px-3 py-2 mt-5 ml-auto transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit">create</button>
       </form>
     </div>
