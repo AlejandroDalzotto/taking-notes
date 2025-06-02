@@ -1,3 +1,4 @@
+import NotesCount from "@/components/NotesCount";
 import NotesList from "@/components/NotesList";
 import SearchBar from "@/components/SearchBar";
 import { Suspense } from "react"
@@ -9,10 +10,11 @@ export default function NotesPage() {
         <h1 className="mb-5 text-3xl font-geist-mono">Notes list</h1>
         <p className="mb-5 text-lg">There you have all the notes you&apos;ve written.</p>
       </header>
-      <section className="w-full">
+      <section className="flex items-center justify-between w-full mb-5">
         <Suspense>
           <SearchBar />
         </Suspense>
+        <NotesCount />
       </section>
       <Suspense>
         <NotesList />

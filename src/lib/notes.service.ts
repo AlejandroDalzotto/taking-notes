@@ -116,3 +116,13 @@ export const removeNote = async (tag: string, extension: FileExtension): Promise
     return [err instanceof Error ? err : new Error(String(err)), null];
   }
 };
+
+export const getTotalNotesCount = async (): Promise<number> => {
+  try {
+    const count = await invoke<number>("get_total_notes_count");
+    return count;
+  } catch (error) {
+    console.error("Failed to fetch total notes count:", error);
+    return 0;
+  }
+}

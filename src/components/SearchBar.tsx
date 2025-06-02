@@ -28,7 +28,7 @@ export default function SearchBar() {
 
   return (
     <input
-      className="py-2 px-4 mb-5 rounded-md bg-white/5 placeholder:text-white/15"
+      className="px-4 py-2 rounded-md bg-white/5 placeholder:text-white/15"
       placeholder="Search any note by title"
       onChange={(e) => updateTermHandler(e.target.value)}
     />

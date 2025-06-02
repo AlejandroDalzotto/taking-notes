@@ -48,6 +48,7 @@ pub fn run() {
             notes::edit_note_metadata,
             notes::remove_note,
             notes::remove_note_metadata,
+            notes::get_total_notes_count,
         ])
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {

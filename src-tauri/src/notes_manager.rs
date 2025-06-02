@@ -225,4 +225,16 @@ impl NotesManager {
 
         Ok(files_data)
     }
+
+    pub fn get_total_notes_count(notes_manager_path: String) -> Result<usize, std::io::Error> {
+        if !fs::exists(&notes_manager_path)? {
+            return Ok(0);
+        }
+
+        let raw_json_data = fs::read_to_string(&notes_manager_path)?;
+        let files_data: Vec<NoteMetadata> = serde_json::from_str(&raw_json_data)
+            .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?;
+
+        Ok(files_data.len())
+    }
 }
