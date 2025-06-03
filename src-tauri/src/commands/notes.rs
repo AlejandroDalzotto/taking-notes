@@ -207,9 +207,7 @@ pub async fn remove_note_metadata(
 }
 
 #[command]
-pub async fn get_total_notes_count(
-    app_state: State<'_, AppDirs>,
-) -> Result<usize, NoteError> {
+pub async fn get_total_notes_count(app_state: State<'_, AppDirs>) -> Result<usize, NoteError> {
     let manager_path = app_state.manager_path.to_string();
 
     let count = NotesManager::get_total_notes_count(manager_path);
