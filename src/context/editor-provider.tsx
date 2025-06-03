@@ -4,19 +4,25 @@ import { createContext, useContext, useState } from "react";
 type EditorContextType = {
   setContent: (content: string) => void;
   content: string;
+  setInitialContent: (content: string) => void;
 };
 
 export const EditorContext = createContext<EditorContextType>({
-  setContent: () => {},
+  setContent: () => { },
   content: "",
+  setInitialContent: () => { },
 });
 
 // Provider component can be implemented later to manage editor state
 export const EditorProvider = ({ children }: { children: React.ReactNode }) => {
   const [content, setContent] = useState<string>("");
 
+  const setInitialContent = (initialContent: string) => {
+    setContent(initialContent);
+  };
+
   return (
-    <EditorContext.Provider value={{ content, setContent }}>
+    <EditorContext.Provider value={{ content, setContent, setInitialContent }}>
       {children}
     </EditorContext.Provider>
   );

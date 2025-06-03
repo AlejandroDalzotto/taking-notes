@@ -66,7 +66,7 @@ export default function CreateNotePage() {
           </select>
         </div>
         {extension === FileExtension.MARKDOWN ? (
-          <MDEditor content={content} set={setContent} />
+          <MDEditor />
         ) : (
           <textarea
             value={content}
@@ -79,8 +79,6 @@ export default function CreateNotePage() {
           />
         )}
         <div className="flex items-center justify-between w-full">
-
-          {/* Not implemented yet */}
           <ButtonPreviewHtml />
           <button type="submit" className="px-3 py-2 mt-5 transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit">
             create

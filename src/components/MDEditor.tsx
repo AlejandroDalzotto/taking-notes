@@ -1,17 +1,15 @@
 "use client";
 
+import { useEditor } from "@/context/editor-provider";
 import { remarkMarkdown } from "@/lib/utils";
 import { useRef, useEffect } from "react";
 
-type Props = {
-  content: string,
-  set: (value: string) => void,
-}
-
-export default function MDEditor({ content, set }: Props) {
+export default function MDEditor() {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const isSyncingScroll = useRef<"textarea" | "preview" | null>(null);
+
+  const { content, setContent: set } = useEditor();
 
   // Sync preview scroll when textarea scrolls
   function handleTextareaScroll() {
