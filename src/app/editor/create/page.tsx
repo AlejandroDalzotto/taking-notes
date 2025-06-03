@@ -9,6 +9,7 @@ import { extensionsOptions } from "@/lib/constants";
 import MDEditor from "@/components/MDEditor";
 import ButtonPreviewHtml from "@/components/ButtonPreviewHtml";
 import { useEditor } from "@/context/editor-provider";
+import ButtonPreviewMarkdown from "@/components/ButtonPreviewMarkdown";
 
 export default function CreateNotePage() {
 
@@ -35,7 +36,7 @@ export default function CreateNotePage() {
       return
     }
 
-    toast.error(message)
+    toast.error(error.message)
   }
 
   return (
@@ -79,7 +80,12 @@ export default function CreateNotePage() {
           />
         )}
         <div className="flex items-center justify-between w-full">
-          <ButtonPreviewHtml />
+          <div className="flex items-center gap-x-4">
+            <ButtonPreviewHtml />
+            {extension === FileExtension.MARKDOWN && (
+              <ButtonPreviewMarkdown />
+            )}
+          </div>
           <button type="submit" className="px-3 py-2 mt-5 transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit">
             create
           </button>

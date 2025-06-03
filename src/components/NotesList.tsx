@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { getLocalDateString } from "@/lib/utils";
 import Loading from "./Loading";
 import { toast } from "sonner";
+import clsx from "clsx";
 
 export default function NotesList() {
 
@@ -70,8 +71,13 @@ export default function NotesList() {
               key={note.tag}>
               <header className="relative flex items-center justify-between gap-x-10">
                 <p className="text-xl capitalize max-w-[50%] whitespace-nowrap font-geist-mono truncate">{note.title}</p>
-                <span title={`created at: ${getLocalDateString(note.createdAt)}`} className="text-neutral-400 truncate">{getLocalDateString(note.createdAt)}</span>
+                <p title={`created at: ${getLocalDateString(note.createdAt)}`} className="text-neutral-400 truncate">{getLocalDateString(note.createdAt)}</p>
               </header>
+              <span className={clsx(
+                "absolute bottom-1/2 translate-y-1/2 right-5 text-7xl opacity-10 font-geist-mono",
+                {"text-blue-500": note.fileExtension === "md"},
+                {"text-orange-500": note.fileExtension === "txt"},
+              )}>.{note.fileExtension}</span>
             </Link>
           )
         })
