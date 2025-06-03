@@ -47,7 +47,6 @@ export const getNotesByTerm = async (searchTerm: string) => {
     const data = await invoke<NoteMetadata[]>("search_notes_by_term", { term: searchTerm });
     return data
   } catch (e) {
-    console.error(e)
     return []
   }
 }
@@ -122,7 +121,6 @@ export const getTotalNotesCount = async (): Promise<number> => {
     const count = await invoke<number>("get_total_notes_count");
     return count;
   } catch (error) {
-    console.error("Failed to fetch total notes count:", error);
     return 0;
   }
 }

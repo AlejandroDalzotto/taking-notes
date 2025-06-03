@@ -11,7 +11,6 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAsyncResult } from "@/hooks/useAsyncResult";
 import { Suspense } from "react";
-import Image from "next/image";
 import { IconDelete, IconEdit } from "@/components/Icons";
 
 const Wrapper = () => {
@@ -90,7 +89,7 @@ const Wrapper = () => {
           </button>
           <Link
             title={`Edit ${metadata?.title ?? "undefined"}`}
-            href={`/edit?tag=${tag}&ext=${extension}`}
+            href={`/editor/edit?tag=${tag}&ext=${extension}`}
             className="w-8 h-8 transition-all border rounded-md group/edit hover:scale-110 border-white/5 bg-white/5"
           >
             <IconEdit size={32} className="fill-neutral-50 p-0.5 group-hover/edit:fill-emerald-400 transition-colors" />

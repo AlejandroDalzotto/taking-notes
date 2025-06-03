@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getLocalDateString } from "@/lib/utils";
 import Loading from "./Loading";
+import { toast } from "sonner";
 
 export default function NotesList() {
 
@@ -25,7 +26,7 @@ export default function NotesList() {
         const data = await getNotesMetadata()
         setNotes(data)
       } catch (e) {
-        console.error({ error: e })
+        toast.error("Failed to load notes metadata. Please try again later.")
       } finally {
         setIsLoading(false)
       }
