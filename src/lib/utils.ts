@@ -1,3 +1,8 @@
+import { remark } from 'remark'
+import { highlight } from 'remark-sugar-high'
+import html from 'remark-html'
+import gfm from 'remark-gfm'
+
 /**
  * Generate a random unique code for files identification.
  * @returns An auto-generated unique code.
@@ -41,12 +46,12 @@ export function remarkMarkdown(md: string): string {
   });
 
   // 2. Proteger tags HTML (cualquier <...>)
-md = md.replace(/&lt;\/?[a-zA-Z][^&gt;\n]*&gt;/g, m => {
-  blocks.push(`<span class="md-html-tag">${m}</span>`);
-  return `\u0000BLOCK${i++}\u0000`;
-});
-// 2b. Proteger tags HTML incompletos (&lt; y &lt;/)
-md = md.replace(/&lt;\/?/g, m => `<span class="md-html-tag">${m}</span>`);
+  md = md.replace(/&lt;\/?[a-zA-Z][^&gt;\n]*&gt;/g, m => {
+    blocks.push(`<span class="md-html-tag">${m}</span>`);
+    return `\u0000BLOCK${i++}\u0000`;
+  });
+  // 2b. Proteger tags HTML incompletos (&lt; y &lt;/)
+  md = md.replace(/&lt;\/?/g, m => `<span class="md-html-tag">${m}</span>`);
 
   // 3. Proteger negrita (**...**)
   md = md.replace(/\*\*[^*]+\*\*/g, m => {
