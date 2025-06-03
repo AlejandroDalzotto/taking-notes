@@ -16,7 +16,7 @@ export const navLinks: NavLink[] = [
   {
     id: "5620f70f-3fdc-44e8-a2d7-1bf21c0e0788",
     label: "create",
-    href: "/create",
+    href: "/editor/create",
     icon: "add"
   }
 ];

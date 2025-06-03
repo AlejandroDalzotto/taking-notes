@@ -1,7 +1,7 @@
 "use client";
 
-import Markdown from "react-markdown";
 import Link from "next/link";
+import Markdown from "react-markdown";
 import { highlight } from "sugar-high";
 
 export default function MarkdownContent({ content }: { content: string }) {

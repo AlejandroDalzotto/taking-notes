@@ -7,13 +7,15 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { extensionsOptions } from "@/lib/constants";
 import MDEditor from "@/components/MDEditor";
+import ButtonPreviewHtml from "@/components/ButtonPreviewHtml";
+import { useEditor } from "@/context/editor-provider";
 
 export default function CreateNotePage() {
 
   const router = useRouter()
   const [extension, setExtension] = useState<FileExtension>(FileExtension.MARKDOWN);
 
-  const [content, setContent] = useState("");
+  const { content, setContent } = useEditor()
 
   const handleAction = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -76,7 +78,14 @@ export default function CreateNotePage() {
             className="p-4 overflow-y-auto font-mono text-lg transition-colors bg-transparent outline-none resize-none grow text-start placeholder:text-neutral-400 hover:bg-white/5"
           />
         )}
-        <button className="px-3 py-2 mt-5 ml-auto transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit">create</button>
+        <div className="flex items-center justify-between w-full">
+
+          {/* Not implemented yet */}
+          <ButtonPreviewHtml />
+          <button type="submit" className="px-3 py-2 mt-5 transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit">
+            create
+          </button>
+        </div>
       </form>
     </div>
   )
