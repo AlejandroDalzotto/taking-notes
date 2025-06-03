@@ -19,18 +19,26 @@ export default function UpdaterProvider({
         // check if the application is running in dev mode before checking for updates
         const isDev = process.env.NODE_ENV === 'development';
 
-        // toast.loading(<div className="flex flex-col w-fit">
-        //   {update && (<h1 className="text-lg font-geist-mono">{update.body ?? "New version available"}</h1>)}
-        //   <p className="whitespace-nowrap">The application will automatically restart to complete the update.</p>
-        // </div>);
         if (isDev) {
           toast.error("Updates are not available in development mode. Please build the application to check for updates.");
           return;
         }
 
+
         // check for updates
         const update = await check();
-        if (update && update.version != update.currentVersion) {
+        if (!update) {
+          toast.success("No updates available.");
+          return;
+        }
+
+        if (update.version != update.currentVersion) {
+          toast.loading(
+            <div className="flex flex-col w-fit">
+              {update && (<h1 className="text-lg font-geist-mono">{update.body ?? `New version ${update.version} available`}</h1>)}
+              <p className="whitespace-nowrap">The application will automatically restart to complete the update.</p>
+            </div>
+          );
           let downloaded = 0;
           let contentLength = 0;
           // alternatively we could also call update.download() and update.install() separately
