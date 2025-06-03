@@ -15,6 +15,7 @@ export function useAsyncResult<E, T>(
     loading: true,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setState({ error: null, data: null, loading: true });
     fn().then(([error, data]) => {

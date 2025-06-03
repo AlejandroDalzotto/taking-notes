@@ -39,24 +39,12 @@ export default function UpdaterProvider({
               <p className="whitespace-nowrap">The application will automatically restart to complete the update.</p>
             </div>
           );
-          let downloaded = 0;
-          let contentLength = 0;
           // alternatively we could also call update.download() and update.install() separately
-          await update.downloadAndInstall((event) => {
-            switch (event.event) {
-              case 'Started':
-                contentLength = event.data.contentLength ?? 0;
-                break;
-              case 'Progress':
-                downloaded += event.data.chunkLength;
-                break;
-              case 'Finished':
-                break;
-            }
-          });
+          await update.downloadAndInstall();
           await relaunch();
         }
       } catch (error) {
+        console.log("Error checking for updates:", error);
         toast.error("Failed to check for updates. Please try again later.");
       }
     })();

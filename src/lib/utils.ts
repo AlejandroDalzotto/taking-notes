@@ -1,8 +1,3 @@
-import { remark } from 'remark'
-import { highlight } from 'remark-sugar-high'
-import html from 'remark-html'
-import gfm from 'remark-gfm'
-
 /**
  * Generate a random unique code for files identification.
  * @returns An auto-generated unique code.

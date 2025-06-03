@@ -37,6 +37,7 @@ const ContentWrapped = () => {
 
   const router = useRouter()
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (contentData) {
       setInitialContent(contentData);

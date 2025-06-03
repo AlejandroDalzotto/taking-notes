@@ -27,6 +27,7 @@ export default function NotesList() {
         const data = await getNotesMetadata()
         setNotes(data)
       } catch (e) {
+        console.error("Error loading notes metadata:", e);
         toast.error("Failed to load notes metadata. Please try again later.")
       } finally {
         setIsLoading(false)
