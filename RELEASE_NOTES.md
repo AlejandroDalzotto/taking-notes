@@ -1,18 +1,17 @@
-# 🎉 New version: v0.3.1
+# 🎉 New version: v0.4.0
 
-New features, improvements, and bug fixes!
+New features and improvements have been added to the app!
 
 ---
 
 ## Features
 
-- Added the app icon to the navbar.
-
----
-
-## Bug Fixes
-
-- The content of the notes is now displayed correctly based on the note type (`text`, `markdown`).
+- Code blocks are now syntax-highlighted in the final Markdown preview.
+- Text highlighting has been added while editing or creating Markdown-based notes.
+- A grainy background has been introduced to the app.
+- App icons have been updated for a more modern look.
+- You can now preview notes as HTML code editing or creating them before saving. Available for both text plain and Markdown-based notes.
+- Added a Markdown preview visualizer that allowed users to see their notes while editing or creating them. Only available for Markdown-based notes.
 
 ---
 
