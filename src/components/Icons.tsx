@@ -4,6 +4,36 @@ type Props = {
   className?: string;
 }
 
+export function IconHtml({ size = 32, className = "" }: Props) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 -960 960 960"
+      fill="currentColor"
+    >
+      <path d="M8-377.5v-205h26.5v79.5h114v-79.5H175v205h-26.5v-99h-114v99H8Zm311 0V-556h-79.5v-26.5H425v26.5h-79.5v178.5H319Zm170.5 0v-178q0-11.48 7.76-19.24 7.77-7.76 19.24-7.76h170.64q11.05 0 19.21 7.76 8.15 7.76 8.15 19.24v178H688V-556h-72.5v139H589v-139h-73v178.5h-26.5Zm323 0v-205H839V-404h113v26.5H812.5Z" />
+    </svg>
+  );
+}
+
+export function IconMarkdown({ size = 32, className = "" }: Props) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 -960 960 960"
+      fill="currentColor"
+    >
+      <path d="m640-377.5 95-95-18-19-63.5 62.5v-153.5H627V-429l-63.5-62.5-18 19 94.5 95Zm-445.72 161q-24.22 0-40.75-16.53T137-273.8v-412.4q0-24.24 16.53-40.77 16.53-16.53 40.75-16.53h571.44q24.22 0 40.75 16.53T823-686.2v412.4q0 24.24-16.53 40.77-16.53 16.53-40.75 16.53H194.28Zm.22-25.5h571q12 0 22-10t10-22v-412q0-12-10-22t-22-10h-571q-12 0-22 10t-10 22v412q0 12 10 22t22 10Zm-32 0v-476 476Zm75-135.5H264V-556h72.5v119H363v-119h73v178.5h26.5V-559q0-10.5-6.5-17t-17-6.5H261q-10.5 0-17 6.5t-6.5 17v181.5Z" />
+    </svg>
+  );
+}
+
 export function IconEye({ size = 32, className = "" }: Props) {
   return (
     <svg
