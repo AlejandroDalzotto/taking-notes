@@ -9,6 +9,7 @@ import { useAsyncResult } from "@/hooks/useAsyncResult";
 import ButtonPreviewHtml from "@/components/ButtonPreviewHtml";
 import MDEditor from "@/components/MDEditor";
 import { useEditor } from "@/context/editor-provider";
+import ButtonPreviewMarkdown from "@/components/ButtonPreviewMarkdown";
 
 const ContentWrapped = () => {
   const searchParams = useSearchParams();
@@ -103,7 +104,12 @@ const ContentWrapped = () => {
           />
         )}
         <div className="flex items-center justify-between w-full">
-          <ButtonPreviewHtml />
+          <div className="flex items-center gap-x-4">
+            <ButtonPreviewHtml />
+            {extension === FileExtension.MARKDOWN && (
+              <ButtonPreviewMarkdown />
+            )}
+          </div>
           <button
             type="submit"
             className="px-3 py-2 mt-5 ml-auto transition-colors border rounded-md border-white/5 hover:bg-white/5 w-fit"
