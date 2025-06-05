@@ -9,6 +9,7 @@ import { getLocalDateString } from "@/lib/utils";
 import Loading from "./Loading";
 import { toast } from "sonner";
 import clsx from "clsx";
+import { Log } from "@/lib/services/log";
 
 export default function NotesList() {
 
@@ -27,7 +28,7 @@ export default function NotesList() {
         const data = await getNotesMetadata()
         setNotes(data)
       } catch (e) {
-        console.error("Error loading notes metadata:", e);
+        Log.error("Error loading notes metadata", (e as Error).message)
         toast.error("Failed to load notes metadata. Please try again later.")
       } finally {
         setIsLoading(false)

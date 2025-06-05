@@ -56,8 +56,6 @@ const ContentWrapped = () => {
       fileExtension: extension as FileExtension,
     };
 
-    console.log("New entry to save:", newEntry);
-
     const [anErrorHasHappened, message] = await editNote(tag, newEntry)
 
     if (!anErrorHasHappened) {

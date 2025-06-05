@@ -35,6 +35,15 @@ fn get_app_dirs(app: &tauri::App) -> AppDirs {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some(String::from("app-logs")),
+                    },
+                ))
+                .build(),
+        )
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -53,13 +62,6 @@ pub fn run() {
         ])
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
 
             // Manage app directories and paths
             let app_dirs = get_app_dirs(app);

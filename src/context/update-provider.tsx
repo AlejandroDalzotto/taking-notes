@@ -1,5 +1,6 @@
 "use client";
 
+import { Log } from "@/lib/services/log";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
 import { createContext, useEffect } from "react";
@@ -43,8 +44,8 @@ export default function UpdaterProvider({
           await update.downloadAndInstall();
           await relaunch();
         }
-      } catch (error) {
-        console.log("Error checking for updates:", error);
+      } catch (e) {
+        Log.error("Error checking for updates", (e as Error).message)
         toast.error("Failed to check for updates. Please try again later.");
       }
     })();

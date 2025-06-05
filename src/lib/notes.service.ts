@@ -1,7 +1,8 @@
 import type { FileExtension, NoteEntry, NoteMetadata } from "./definitions"
 import { validateNoteBody } from "@/lib/validation.service"
 import { invoke } from "@tauri-apps/api/core"
-import { generateRandomUniqueTag } from "./utils"
+import { generateRandomUniqueTag } from "@/lib/utils"
+import { Log } from "@/lib/services/log"
 
 /**
  * A method that returns a list of information about the files already created.
@@ -47,7 +48,7 @@ export const getNotesByTerm = async (searchTerm: string) => {
     const data = await invoke<NoteMetadata[]>("search_notes_by_term", { term: searchTerm });
     return data
   } catch (e) {
-    console.log("Error getting notes by term:", e);
+    Log.error("Error getting notes by term", (e as Error).message)
     return []
   }
 }
@@ -122,7 +123,7 @@ export const getTotalNotesCount = async (): Promise<number> => {
     const count = await invoke<number>("get_total_notes_count");
     return count;
   } catch (e) {
-    console.log("Error getting total notes count:", e);
+    Log.error("Error getting total notes count", (e as Error).message)
     return 0;
   }
 }
