@@ -88,7 +88,7 @@ const Wrapper = () => {
           </button>
           <Link
             title={`Edit ${metadata?.title ?? "undefined"}`}
-            href={`/editor/edit?tag=${tag}&ext=${extension}`}
+            href={`/editor/edit/${extension}?tag=${tag}`}
             className="w-8 h-8 transition-all border rounded-md group/edit hover:bg-green-500/5 hover:border-green-500/5 hover:scale-110 border-white/5 bg-white/5"
           >
             <IconEdit size={32} className="fill-neutral-50 p-0.5 group-hover/edit:fill-green-600 transition-colors" />

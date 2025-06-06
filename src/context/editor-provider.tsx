@@ -1,16 +1,21 @@
 "use client";
 import { createContext, useContext, useState } from "react";
 
-type EditorContextType = {
-  setContent: (content: string) => void;
+type EditorState = {
   content: string;
-  setInitialContent: (content: string) => void;
 };
+
+type EditorActions = {
+  setContent: (content: string) => void;
+  setInitialContent: (content: string) => void;
+}
+
+type EditorContextType = EditorState & EditorActions;
 
 export const EditorContext = createContext<EditorContextType>({
   setContent: () => { },
-  content: "",
   setInitialContent: () => { },
+  content: "",
 });
 
 // Provider component can be implemented later to manage editor state
@@ -21,8 +26,13 @@ export const EditorProvider = ({ children }: { children: React.ReactNode }) => {
     setContent(initialContent);
   };
 
+
   return (
-    <EditorContext.Provider value={{ content, setContent, setInitialContent }}>
+    <EditorContext.Provider value={{
+      content,
+      setContent,
+      setInitialContent,
+    }}>
       {children}
     </EditorContext.Provider>
   );

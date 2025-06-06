@@ -64,7 +64,7 @@ export default function Navbar() {
 
       <Link
         target="_blank"
-        className="font-medium transition-colors hover:text-rose-600"
+        className="font-light font-geist-mono transition-colors hover:text-blue-500"
         href="https://github.com/AlejandroDalzotto"
       >
         Made by Alejandro
