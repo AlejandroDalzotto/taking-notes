@@ -37,7 +37,7 @@ export default function RootLayout({
         <UpdaterProvider>
           <ModalProvider>
             <Navbar />
-            <main className="w-full h-full overflow-x-hidden">
+            <main className="w-full h-full flex overflow-x-hidden">
               {children}
             </main>
             <Toaster position="bottom-left" toastOptions={{

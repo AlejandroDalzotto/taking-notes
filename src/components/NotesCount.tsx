@@ -16,7 +16,7 @@ export default function NotesCount() {
   }, []);
 
   return (
-    <span className="text-lg font-geist-mono text-neutral-400">
+    <span className="text-lg whitespace-nowrap font-geist-mono text-neutral-400">
       📝 {total} {total === 1 ? "note" : "notes"}
     </span>
   )

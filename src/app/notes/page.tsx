@@ -10,7 +10,7 @@ export default function NotesPage() {
         <h1 className="mb-5 text-3xl font-geist-mono">Notes list</h1>
         <p className="mb-5 text-lg">There you have all the notes you&apos;ve written.</p>
       </header>
-      <section className="flex items-center justify-between w-full mb-5">
+      <section className="flex items-center justify-between gap-x-5 w-full mb-5">
         <Suspense>
           <SearchBar />
         </Suspense>

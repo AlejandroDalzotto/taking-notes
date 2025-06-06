@@ -76,7 +76,7 @@ export default function NotesList() {
                 <p title={`created at: ${getLocalDateString(note.createdAt)}`} className="text-neutral-400 truncate">{getLocalDateString(note.createdAt)}</p>
               </header>
               <span className={clsx(
-                "absolute bottom-1/2 translate-y-1/2 right-5 text-7xl opacity-10 font-geist-mono",
+                "absolute bottom-1/2 translate-y-1/2 right-5 text-7xl opacity-15 font-geist-mono",
                 {"text-blue-500": note.fileExtension === "md"},
                 {"text-orange-500": note.fileExtension === "txt"},
               )}>.{note.fileExtension}</span>
