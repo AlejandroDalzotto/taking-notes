@@ -1,3 +1,6 @@
+"use client";
+
+import { useDraft } from "@/context/draft-provider";
 import { FileExtension } from "@/lib/definitions"
 import clsx from "clsx"
 import Link from "next/link"
@@ -9,6 +12,8 @@ type NoteOption = {
 }
 
 export default function CreateNotePage() {
+
+  const { draft, extension, tag, resetDraft } = useDraft()
 
   const options: NoteOption[] = [
     {
@@ -32,6 +37,7 @@ export default function CreateNotePage() {
 
             return (
               <Link
+                onClick={() => resetDraft()}
                 href={option.url}
                 title={`Create a ${option.label.toLowerCase()}`}
                 className={clsx(
@@ -57,6 +63,14 @@ export default function CreateNotePage() {
           })
         }
       </div>
+      {draft ? (
+        <Link
+          href={tag ? `/editor/edit/${extension}?tag=${tag}` : `/editor/create/${extension}`}
+          className="px-4 py-2 text-lg text-center transition-colors border-2 rounded-md w-max border-neutral-600 text-neutral-600 hover:border-neutral-300 hover:text-neutral-300 font-geist-mono"
+        >
+          You have an unsaved draft. <br /> Would you like to continue editing it?
+        </Link>
+      ) : null}
     </div>
   )
 }

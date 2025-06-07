@@ -1,18 +1,21 @@
 "use client";
 
 import ButtonPreviewHtml from "@/components/ButtonPreviewHtml";
+import { useDraft } from "@/context/draft-provider";
 import { useEditor } from "@/context/editor-provider";
 import { FileExtension, NoteEntry } from "@/lib/definitions";
 import { createNote } from "@/lib/notes.service";
 import { useRouter } from "next/navigation";
-import { type FormEvent } from "react";
+import { useEffect, useRef, type FormEvent } from "react";
 import { toast } from "sonner";
 
 export default function CreateTxtNotePage() {
 
   const router = useRouter()
+  const { content, setContent, setInitialContent } = useEditor()
+  const { setDraft, draft } = useDraft()
+  const contentRef = useRef(content)
 
-  const { content, setContent } = useEditor()
 
   const handleAction = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -27,6 +30,7 @@ export default function CreateTxtNotePage() {
 
     if (!error) {
       toast.success(message)
+      setContent("")
       router.push("/notes")
 
       return
@@ -34,6 +38,24 @@ export default function CreateTxtNotePage() {
 
     toast.error(error.message)
   }
+
+  useEffect(() => {
+    if (draft) {
+      setInitialContent(draft)
+    }
+  }, [])
+
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
+
+  useEffect(() => {
+    return () => {
+      if (contentRef.current) {
+        setDraft(contentRef.current, FileExtension.PLAINTEXT);
+      }
+    };
+  }, []);
 
   return (
     <form onSubmit={(e) => handleAction(e)} className="flex flex-col w-full grow">

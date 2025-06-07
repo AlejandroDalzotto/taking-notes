@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import UpdaterProvider from "@/context/update-provider";
 import Grainy from "@/components/Grainy";
 import { ModalProvider } from "@/context/modal-provider";
+import DraftProvider from "@/context/draft-provider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -35,16 +36,18 @@ export default function RootLayout({
       >
         <Grainy />
         <UpdaterProvider>
-          <ModalProvider>
-            <Navbar />
-            <main className="w-full h-full flex overflow-x-hidden">
-              {children}
-            </main>
-            <Toaster position="bottom-left" toastOptions={{
-              unstyled: true,
-              className: "flex border border-white/10 min-h-16 text-sm items-center gap-x-2 px-3 py-2 rounded-md bg-neutral-900 text-neutral-50 fill-neutral-50"
-            }} />
-          </ModalProvider>
+          <DraftProvider>
+            <ModalProvider>
+              <Navbar />
+              <main className="flex w-full h-full overflow-x-hidden">
+                {children}
+              </main>
+              <Toaster position="bottom-left" toastOptions={{
+                unstyled: true,
+                className: "flex border border-white/10 min-h-16 text-sm items-center gap-x-2 px-3 py-2 rounded-md bg-neutral-900 text-neutral-50 fill-neutral-50"
+              }} />
+            </ModalProvider>
+          </DraftProvider>
         </UpdaterProvider>
       </body>
     </html>
