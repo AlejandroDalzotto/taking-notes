@@ -12,7 +12,7 @@ export default function HtmlPreviewModal({ content }: { content: string }) {
   const highlightedHtml = highlight(html)
 
   return (
-    <div className="flex flex-col gap-y-4">
+    <div className="flex flex-col gap-y-4" onClick={e => e.stopPropagation()}>
       <header className="flex items-center justify-between">
         <p className="text-orange-500 font-mono text-lg font-bold">.html</p>
         <ButtonCopy content={html} />
