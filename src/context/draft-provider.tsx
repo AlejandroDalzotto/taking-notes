@@ -2,26 +2,29 @@
 import { FileExtension } from "@/lib/definitions";
 import { createContext, useContext, useState } from "react";
 
-type DraftContextState = {
-  draft: string;
+type Draft = {
+  data: {
+    title: string,
+    content: string,
+  };
   tag: string | null;
-  extension: FileExtension | null;
+  extension: FileExtension;
+}
+
+type DraftContextState = {
+  draft: Draft | null;
 }
 
 type DraftContextAction = {
-  setDraft: (value: string, fileExtension: FileExtension) => void;
-  setTag: (value: string) => void;
+  setDraft: (draft: Draft) => void;
   resetDraft: VoidFunction;
 }
 
 type DraftContextType = DraftContextState & DraftContextAction
 
 export const DraftContext = createContext<DraftContextType>({
-  draft: "",
-  tag: null,
-  extension: null,
+  draft: null,
   setDraft: () => { },
-  setTag: () => { },
   resetDraft: () => { },
 })
 
@@ -30,29 +33,17 @@ export default function DraftProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [draft, setDraft] = useState("")
-  const [tag, setTag] = useState<string | null>(null)
-  const [extension, setExtension] = useState<FileExtension | null>(null)
+  const [draft, setDraft] = useState<Draft | null>(null)
 
   const resetDraft = () => {
-    setDraft("")
-    setTag(null)
-    setExtension(null)
-  }
-
-  const set = (value: string, fileExtension: FileExtension) => {
-    setDraft(value)
-    setExtension(fileExtension)
+    setDraft(null)
   }
 
   return (
     <DraftContext.Provider value={{
       draft,
-      tag,
-      extension,
       resetDraft,
-      setDraft: set,
-      setTag,
+      setDraft,
     }}>
       {children}
     </DraftContext.Provider>

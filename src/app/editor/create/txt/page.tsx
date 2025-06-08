@@ -12,9 +12,9 @@ import { toast } from "sonner";
 export default function CreateTxtNotePage() {
 
   const router = useRouter()
-  const { content, setContent, setInitialContent } = useEditor()
+  const { noteEditorData, resetNoteEditor, setInitialNoteEditor, setNoteEditor } = useEditor()
   const { setDraft, draft } = useDraft()
-  const contentRef = useRef(content)
+  const noteRef = useRef(noteEditorData)
 
 
   const handleAction = async (e: FormEvent<HTMLFormElement>) => {
@@ -30,7 +30,7 @@ export default function CreateTxtNotePage() {
 
     if (!error) {
       toast.success(message)
-      setContent("")
+      resetNoteEditor()
       router.push("/notes")
 
       return
@@ -40,26 +40,36 @@ export default function CreateTxtNotePage() {
   }
 
   useEffect(() => {
-    if (draft) {
-      setInitialContent(draft)
+    if (draft?.data.title || draft?.data.content) {
+      console.log({ draft })
+      setInitialNoteEditor(draft.data)
     }
   }, [])
 
   useEffect(() => {
-    contentRef.current = content;
-  }, [content]);
+    noteRef.current = noteEditorData;
+  }, [noteEditorData]);
 
   useEffect(() => {
     return () => {
-      if (contentRef.current) {
-        setDraft(contentRef.current, FileExtension.PLAINTEXT);
+      if (noteRef.current) {
+        setDraft({
+          data: noteRef.current,
+          extension: FileExtension.PLAINTEXT,
+          tag: null,
+        });
       }
     };
   }, []);
 
   return (
-    <form onSubmit={(e) => handleAction(e)} className="flex flex-col w-full grow">
+    <form onSubmit={handleAction} className="flex flex-col w-full grow">
       <input
+        value={noteEditorData?.title}
+        onChange={(e) => setNoteEditor({
+          title: e.target.value,
+          content: noteEditorData?.content ?? ""
+        })}
         spellCheck={false}
         autoComplete="off"
         name="title"
@@ -67,8 +77,11 @@ export default function CreateTxtNotePage() {
         className="w-full p-4 text-xl font-mono transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/[0.01] focus:bg-white/5"
       />
       <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
+        value={noteEditorData?.content}
+        onChange={(e) => setNoteEditor({
+          title: noteEditorData?.title ?? "",
+          content: e.target.value
+        })}
         autoComplete="off"
         name="content"
         spellCheck={false}

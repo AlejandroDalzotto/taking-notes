@@ -1,37 +1,49 @@
 "use client";
 import { createContext, useContext, useState } from "react";
 
-type EditorState = {
+type NoteEditor = {
+  title: string;
   content: string;
+}
+
+type EditorState = {
+  noteEditorData: NoteEditor | null;
 };
 
 type EditorActions = {
-  setContent: (content: string) => void;
-  setInitialContent: (content: string) => void;
+  setNoteEditor: (data: NoteEditor) => void;
+  setInitialNoteEditor: (data: NoteEditor) => void;
+  resetNoteEditor: VoidFunction;
 }
 
 type EditorContextType = EditorState & EditorActions;
 
 export const EditorContext = createContext<EditorContextType>({
-  setContent: () => { },
-  setInitialContent: () => { },
-  content: "",
+  setNoteEditor: () => { },
+  resetNoteEditor: () => { },
+  setInitialNoteEditor: () => { },
+  noteEditorData: null,
 });
 
 // Provider component can be implemented later to manage editor state
 export const EditorProvider = ({ children }: { children: React.ReactNode }) => {
-  const [content, setContent] = useState<string>("");
+  const [noteEditorData, setNoteEditor] = useState<NoteEditor | null>(null);
 
-  const setInitialContent = (initialContent: string) => {
-    setContent(initialContent);
+  const setInitialNoteEditor = (initialContent: NoteEditor) => {
+    setNoteEditor(initialContent);
   };
+
+  const resetNoteEditor = () => {
+    setNoteEditor(null);
+  }
 
 
   return (
     <EditorContext.Provider value={{
-      content,
-      setContent,
-      setInitialContent,
+      noteEditorData: noteEditorData,
+      setNoteEditor,
+      setInitialNoteEditor,
+      resetNoteEditor
     }}>
       {children}
     </EditorContext.Provider>
