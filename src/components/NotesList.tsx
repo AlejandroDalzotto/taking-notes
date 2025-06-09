@@ -1,68 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getNotesMetadata, getNotesByTerm } from "@/lib/notes.service";
-import type { NoteMetadata } from "@/lib/definitions";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import Loading from "@/components/Loading";
+import { useFetchNotesMetadata } from "@/hooks/useFetchNotesMetadata";
 import { getLocalDateString } from "@/lib/utils";
-import Loading from "./Loading";
-import { toast } from "sonner";
 import clsx from "clsx";
-import { Log } from "@/lib/services/log";
+import Link from "next/link";
 
 export default function NotesList() {
 
-  const [notes, setNotes] = useState<NoteMetadata[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const searchParams = useSearchParams()
-  const search = searchParams.get("search") ?? ""
-
-  useEffect(() => {
-    setIsLoading(true)
-
-    const load = async () => {
-
-      try {
-        const data = await getNotesMetadata()
-        setNotes(data)
-      } catch (e) {
-        Log.error("Error loading notes metadata", (e as Error).message)
-        toast.error("Failed to load notes metadata. Please try again later.")
-      } finally {
-        setIsLoading(false)
-      }
-
-    }
-
-    load();
-  }, [])
-
-  useEffect(() => {
-
-    const loadFilteredValues = async () => {
-
-      if (!search) {
-        const data = await getNotesMetadata()
-        setNotes(data)
-        return
-      }
-
-      const filteredValues = await getNotesByTerm(search);
-
-      setNotes(filteredValues)
-    }
-
-    loadFilteredValues();
-  }, [search])
+  const { notes, isLoading, error } = useFetchNotesMetadata()
 
   if (isLoading) {
     return <Loading />
   }
 
+  if (error) {
+    return <div>Error while trying to load notes</div>
+  }
+
   return (
-    <div className="grid content-start grow w-full grid-cols-1 gap-5 overflow-y-auto lg:grid-cols-2 xl:grid-cols-3">
+    <div className="grid content-start w-full grid-cols-1 gap-5 overflow-y-auto grow lg:grid-cols-2 xl:grid-cols-3">
       {
         notes.map(note => {
 
@@ -73,12 +30,12 @@ export default function NotesList() {
               key={note.tag}>
               <header className="relative flex items-center justify-between gap-x-10">
                 <p className="text-xl capitalize max-w-[50%] whitespace-nowrap font-geist-mono truncate">{note.title}</p>
-                <p title={`created at: ${getLocalDateString(note.createdAt)}`} className="text-neutral-400 truncate">{getLocalDateString(note.createdAt)}</p>
+                <p title={`created at: ${getLocalDateString(note.createdAt)}`} className="truncate text-neutral-400">{getLocalDateString(note.createdAt)}</p>
               </header>
               <span className={clsx(
                 "absolute bottom-1/2 translate-y-1/2 right-5 text-7xl opacity-15 font-geist-mono",
-                {"text-blue-500": note.fileExtension === "md"},
-                {"text-orange-500": note.fileExtension === "txt"},
+                { "text-blue-500": note.fileExtension === "md" },
+                { "text-orange-500": note.fileExtension === "txt" },
               )}>.{note.fileExtension}</span>
             </Link>
           )
