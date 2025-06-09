@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export default function NotesList() {
 
-  const { notes, isLoading, error } = useFetchNotesMetadata()
+  const { metadata, isLoading, error } = useFetchNotesMetadata()
 
   if (isLoading) {
     return <Loading />
@@ -21,7 +21,7 @@ export default function NotesList() {
     </div>
   }
 
-  if (!notes.length) {
+  if (!metadata.length) {
     return <div className="grid w-full h-full place-content-center">
       <p className="text-lg font-geist-mono text-neutral-600">Oops! There are no notes to display.</p>
     </div>
@@ -30,7 +30,7 @@ export default function NotesList() {
   return (
     <div className="grid content-start w-full grid-cols-1 gap-5 overflow-y-auto grow lg:grid-cols-2 xl:grid-cols-3">
       {
-        notes.map(note => {
+        metadata.map(note => {
 
           return (
             <Link

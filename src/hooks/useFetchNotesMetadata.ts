@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export const useFetchNotesMetadata = () => {
-  const [notes, setNotes] = useState<NoteMetadata[]>([])
+  const [metadata, setMetadata] = useState<NoteMetadata[]>([])
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -20,12 +20,12 @@ export const useFetchNotesMetadata = () => {
 
       if (!search) {
         const data = await getNotesMetadata()
-        setNotes(data)
+        setMetadata(data)
         return
       }
 
       const filteredValues = await getNotesByTerm(search);
-      setNotes(filteredValues)
+      setMetadata(filteredValues)
     } catch (e) {
       Log.error("Error loading notes metadata", (e as Error).message)
       setError(true)
@@ -39,5 +39,5 @@ export const useFetchNotesMetadata = () => {
     fetchNotes();
   }, [search])
 
-  return { notes, isLoading, error }
+  return { metadata, isLoading, error }
 }
