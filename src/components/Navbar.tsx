@@ -1,12 +1,12 @@
 "use client"
 
+import { IconAdd, IconHome, IconList } from "@/components/Icons";
+import { navLinks } from "@/lib/constants";
+import clsx from "clsx";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import clsx from "clsx"
-import { navLinks } from "@/lib/constants";
 import type { MouseEvent } from "react";
-import Image from "next/image";
-import { IconAdd, IconHome, IconList } from "./Icons";
 
 export default function Navbar() {
 
@@ -16,6 +16,7 @@ export default function Navbar() {
   const handleNavigation = (e: MouseEvent<HTMLAnchorElement>, nagivateTo: string) => {
     e.preventDefault()
 
+    // Prevent unnecesary navigations
     if (nagivateTo === pathname) {
       return
     }

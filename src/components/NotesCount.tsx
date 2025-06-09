@@ -7,11 +7,12 @@ export default function NotesCount() {
 
   const [total, setTotal] = useState<number>(0);
 
+  const fetchTotalNotes = async () => {
+    const result = await getTotalNotesCount();
+    setTotal(result);
+  }
+
   useEffect(() => {
-    const fetchTotalNotes = async () => {
-      const result = await getTotalNotesCount();
-      setTotal(result);
-    }
     fetchTotalNotes();
   }, []);
 
