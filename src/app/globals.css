@@ -11,6 +11,7 @@
 }
 
 :root {
+  /* Sugar high variables */
   --sh-class: #82aaff;
   --sh-identifier: #d6deeb;
   --sh-sign: #7fdbca;
@@ -20,6 +21,12 @@
   --sh-string: #ecc48d;
   --sh-keyword: #ff5874;
   --sh-comment: #5c6773;
+
+  /* Loading variables */
+  --uib-size: 37px;
+  --uib-color: oklch(98.5% 0 0);
+  --uib-speed: .9s;
+  --uib-bg-opacity: .1;
 }
 
 .markdown > * {
@@ -83,4 +90,39 @@
 
 .md-html-comment {
   color: #6e7681;
+}
+
+/* Loading classes */
+.loading__container {
+  height: var(--uib-size);
+  width: var(--uib-size);
+  transform-origin: center;
+  overflow: visible;
+}
+
+.loading__car {
+  fill: none;
+  stroke: var(--uib-color);
+  stroke-dasharray: 15, 85;
+  stroke-dashoffset: 0;
+  stroke-linecap: round;
+  animation: loadingTravel var(--uib-speed) linear infinite;
+  will-change: stroke-dasharray, stroke-dashoffset;
+  transition: stroke 0.5s ease;
+}
+
+.loading__track {
+  stroke: var(--uib-color);
+  opacity: var(--uib-bg-opacity);
+  transition: stroke 0.5s ease;
+}
+
+@keyframes loadingTravel {
+  0% {
+    stroke-dashoffset: 0;
+  }
+
+  100% {
+    stroke-dashoffset: -100;
+  }
 }
