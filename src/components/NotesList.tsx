@@ -15,7 +15,16 @@ export default function NotesList() {
   }
 
   if (error) {
-    return <div>Error while trying to load notes</div>
+    return <div className="grid w-full h-full text-lg text-center place-content-center font-geist-mono text-neutral-600">
+      <p>Unable to load notes.</p>
+      <p>Please try again.</p>
+    </div>
+  }
+
+  if (!notes.length) {
+    return <div className="grid w-full h-full place-content-center">
+      <p className="text-lg font-geist-mono text-neutral-600">Oops! There are no notes to display.</p>
+    </div>
   }
 
   return (
