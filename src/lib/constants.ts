@@ -1,4 +1,4 @@
-import { NavLink, FileExtension } from "@/lib/definitions";
+import { NavLink, NoteExtension } from "@/lib/definitions";
 
 export const navLinks: NavLink[] = [
   {
@@ -23,12 +23,12 @@ export const navLinks: NavLink[] = [
 
 export const extensionsOptions = [
   {
-    value: FileExtension.MARKDOWN,
+    value: NoteExtension.MARKDOWN,
     label: "markdown",
     colorClass: "text-indigo-500",
   },
   {
-    value: FileExtension.PLAINTEXT,
+    value: NoteExtension.PLAINTEXT,
     label: "plain text",
     colorClass: "text-orange-500",
   }

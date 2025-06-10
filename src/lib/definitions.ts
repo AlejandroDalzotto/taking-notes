@@ -1,18 +1,18 @@
 
-export enum FileExtension {
+export enum NoteExtension {
   MARKDOWN = "md",
   PLAINTEXT = "txt"
 }
 
 export type Icon = "home" | "list" | "add";
 
-export interface NoteEntry {
+export type Note = {
   title: string;
   content: string;
-  fileExtension: FileExtension;
+  extension: NoteExtension;
 }
 
-export interface NoteMetadata extends Omit<NoteEntry, "content"> {
+export interface NoteMetadata extends Omit<Note, "content"> {
   tag: string;
   createdAt: number;
   updatedAt: number;

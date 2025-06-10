@@ -1,4 +1,4 @@
-import type { FileExtension, NoteEntry, NoteMetadata } from "./definitions"
+import type { NoteExtension, NoteEntry, NoteMetadata } from "./definitions"
 import { validateNoteBody } from "@/lib/validation.service"
 import { invoke } from "@tauri-apps/api/core"
 import { generateRandomUniqueTag } from "@/lib/utils"
@@ -104,7 +104,7 @@ export const editNote = async (tag: string, values: NoteEntry): Promise<[Error |
 }
 
 
-export const removeNote = async (tag: string, extension: FileExtension): Promise<[Error, null] | [null, string]> => {
+export const removeNote = async (tag: string, extension: NoteExtension): Promise<[Error, null] | [null, string]> => {
 
   try {
     await Promise.all([
