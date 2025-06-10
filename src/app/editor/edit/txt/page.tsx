@@ -4,7 +4,7 @@ import ButtonPreviewHtml from "@/components/ButtonPreviewHtml";
 import ErrorDisplay from "@/components/ErrorDisplay";
 import { useEditor } from "@/context/editor-provider";
 import { useAsyncResult } from "@/hooks/useAsyncResult";
-import { FileExtension, NoteEntry } from "@/lib/definitions";
+import { NoteExtension, NoteEntry } from "@/lib/definitions";
 import { editNote, getNoteContent, getNoteMetadata } from "@/lib/notes.service";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect } from "react";
@@ -21,7 +21,7 @@ const EditNoteWrapped = () => {
     data: contentData,
     loading: loadingContent,
   } = useAsyncResult(
-    () => getNoteContent(tag, FileExtension.PLAINTEXT),
+    () => getNoteContent(tag, NoteExtension.PLAINTEXT),
     [tag]
   );
 
@@ -52,7 +52,7 @@ const EditNoteWrapped = () => {
     const newEntry: NoteEntry = {
       title: formData.get("title") as string,
       content: formData.get("content") as string,
-      fileExtension: FileExtension.PLAINTEXT,
+      fileExtension: NoteExtension.PLAINTEXT,
     };
 
     const [error, message] = await editNote(tag, newEntry)

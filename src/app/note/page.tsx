@@ -4,7 +4,7 @@ import ErrorDisplay from "@/components/ErrorDisplay";
 import Loading from "@/components/Loading";
 import MarkdownContent from "@/components/MarkdownContent";
 import { getNoteContent, getNoteMetadata, removeNote } from "@/lib/notes.service";
-import { FileExtension } from "@/lib/definitions";
+import { NoteExtension } from "@/lib/definitions";
 import { getLocalDateString } from "@/lib/utils";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -16,7 +16,7 @@ import { IconDelete, IconEdit } from "@/components/Icons";
 const Wrapper = () => {
   const searchParams = useSearchParams()
   const tag = searchParams.get("tag")!
-  const extension = searchParams.get("ext")! as FileExtension
+  const extension = searchParams.get("ext")! as NoteExtension
 
   const {
     error: contentError,
@@ -70,7 +70,7 @@ const Wrapper = () => {
         </h1>
       </header>
       <section className="w-full h-full p-2 overflow-y-auto border rounded-lg lg:px-6 lg:py-4 border-white/5">
-        {content && metadata && metadata.fileExtension === FileExtension.MARKDOWN ? (
+        {content && metadata && metadata.extension === NoteExtension.MARKDOWN ? (
           <MarkdownContent content={content} />
         ) : (
           <div className="prose whitespace-pre-line prose-invert prose-img:rounded-lg prose-video:rounded-lg">

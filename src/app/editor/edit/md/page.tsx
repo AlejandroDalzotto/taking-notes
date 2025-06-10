@@ -6,7 +6,7 @@ import ErrorDisplay from "@/components/ErrorDisplay";
 import MDEditor from "@/components/MDEditor";
 import { useEditor } from "@/context/editor-provider";
 import { useAsyncResult } from "@/hooks/useAsyncResult";
-import { FileExtension, NoteEntry } from "@/lib/definitions";
+import { NoteExtension, NoteEntry } from "@/lib/definitions";
 import { editNote, getNoteContent, getNoteMetadata } from "@/lib/notes.service";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect } from "react";
@@ -21,7 +21,7 @@ const ContentWrapped = () => {
     data: contentData,
     loading: loadingContent,
   } = useAsyncResult(
-    () => getNoteContent(tag, FileExtension.MARKDOWN),
+    () => getNoteContent(tag, NoteExtension.MARKDOWN),
     [tag]
   );
 
@@ -53,7 +53,7 @@ const ContentWrapped = () => {
     const newEntry: NoteEntry = {
       title: formData.get("title") as string,
       content: formData.get("content") as string,
-      fileExtension: FileExtension.MARKDOWN,
+      fileExtension: NoteExtension.MARKDOWN,
     };
 
     const [anErrorHasHappened, message] = await editNote(tag, newEntry)
