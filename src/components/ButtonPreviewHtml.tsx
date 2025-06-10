@@ -1,25 +1,25 @@
 "use client";
 
-import { useEditor } from "@/context/editor-provider";
 import { useModal } from "@/context/modal-provider";
 import { IconHtml } from "./Icons";
 import HtmlPreviewModal from "./modals/HtmlPreviewModal";
+import { useDraft } from "@/context/draft-provider";
 
 export default function ButtonPreviewHtml() {
   const { open } = useModal();
-  const { noteEditorData } = useEditor();
+  const { draft } = useDraft();
 
   const handlePreview = () => {
     open(
-      <HtmlPreviewModal content={noteEditorData!.content} />
+      <HtmlPreviewModal content={draft.note.content} />
     );
   };
 
   return (
     <button
-      disabled={!noteEditorData?.content}
+      disabled={!draft.note.content}
       type="button"
-      title={noteEditorData?.content ? "Preview HTML" : "Write something to preview"}
+      title={draft.note.content ? "Preview HTML" : "Write something to preview"}
       onClick={handlePreview}
       className="p-2 mt-5 transition-colors border rounded-md disabled:opacity-40 group/view border-white/5 hover:enabled:bg-amber-500/5 hover:enabled:border-amber-500/5 w-fit"
     >
