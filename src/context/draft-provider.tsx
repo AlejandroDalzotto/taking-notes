@@ -1,31 +1,38 @@
 "use client";
-import { FileExtension } from "@/lib/definitions";
+import { NoteExtension, type Note } from "@/lib/definitions";
 import { createContext, useContext, useState } from "react";
 
 type Draft = {
-  data: {
-    title: string,
-    content: string,
-  };
+  note: Note;
   tag: string | null;
-  extension: FileExtension;
 }
 
 type DraftContextState = {
-  draft: Draft | null;
+  draft: Draft;
 }
 
 type DraftContextAction = {
-  setDraft: (draft: Draft) => void;
+  setDraftNote: (value: Note) => void;
+  setTag: (value: string) => void;
   resetDraft: VoidFunction;
 }
 
 type DraftContextType = DraftContextState & DraftContextAction
 
+const initialState = {
+  tag: null,
+  note: {
+    title: "",
+    content: "",
+    extension: NoteExtension.PLAINTEXT
+  },
+}
+
 export const DraftContext = createContext<DraftContextType>({
-  draft: null,
-  setDraft: () => { },
+  draft: initialState,
+  setDraftNote: () => { },
   resetDraft: () => { },
+  setTag: () => { },
 })
 
 export default function DraftProvider({
@@ -33,17 +40,27 @@ export default function DraftProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [draft, setDraft] = useState<Draft | null>(null)
+
+  const [state, setState] = useState<Draft>(initialState)
+
+  const setDraftNote = (note: Note) => {
+    setState((prev) => ({ note, tag: prev.tag }))
+  }
+
+  const setTag = (tag: string) => {
+    setState((prev) => ({ note: prev.note, tag }))
+  }
 
   const resetDraft = () => {
-    setDraft(null)
+    setState(initialState)
   }
 
   return (
     <DraftContext.Provider value={{
-      draft,
+      draft: state,
       resetDraft,
-      setDraft,
+      setDraftNote,
+      setTag
     }}>
       {children}
     </DraftContext.Provider>
