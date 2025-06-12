@@ -2,12 +2,11 @@
 
 import ButtonPreviewHtml from "@/components/ButtonPreviewHtml";
 import ErrorDisplay from "@/components/ErrorDisplay";
-import { useEditor } from "@/context/editor-provider";
 import { useAsyncResult } from "@/hooks/useAsyncResult";
-import { NoteExtension, NoteEntry } from "@/lib/definitions";
+import { NoteExtension, Note } from "@/lib/definitions";
 import { editNote, getNoteContent, getNoteMetadata } from "@/lib/notes.service";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, Suspense, useEffect } from "react";
+import { type FormEvent, Suspense } from "react";
 import { toast } from "sonner";
 
 const EditNoteWrapped = () => {
@@ -34,25 +33,15 @@ const EditNoteWrapped = () => {
     [tag]
   );
 
-  const { content, setContent, setInitialContent } = useEditor();
-
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (contentData) {
-      setInitialContent(contentData);
-    }
-  }, [contentData]);
-
   const handleAction = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     const formData = new FormData(e.currentTarget);
 
-    const newEntry: NoteEntry = {
+    const newEntry: Note = {
       title: formData.get("title") as string,
       content: formData.get("content") as string,
-      fileExtension: NoteExtension.PLAINTEXT,
+      extension: NoteExtension.PLAINTEXT,
     };
 
     const [error, message] = await editNote(tag, newEntry)
@@ -89,8 +78,6 @@ const EditNoteWrapped = () => {
             className="px-3 py-4 text-xl w-full transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/5"
           />
           <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
             autoComplete="off"
             name="content"
             spellCheck={false}
