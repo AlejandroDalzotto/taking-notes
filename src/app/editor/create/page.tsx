@@ -63,7 +63,7 @@ export default function CreateNotePage() {
           })
         }
       </div>
-      {draft.note ? (
+      {draft.note.content || draft.note.title ? (
         <Link
           href={draft.tag ? `/editor/edit/${draft.note.extension}?tag=${draft.tag}` : `/editor/create/${draft.note.extension}`}
           className="px-4 py-2 text-lg text-center transition-colors border-2 rounded-md w-max border-neutral-600 text-neutral-600 hover:border-neutral-300 hover:text-neutral-300 font-geist-mono"

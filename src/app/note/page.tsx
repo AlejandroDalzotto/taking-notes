@@ -1,40 +1,44 @@
 "use client";
 
-import ErrorDisplay from "@/components/ErrorDisplay";
-import Loading from "@/components/Loading";
+import { IconDelete, IconEdit } from "@/components/Icons";
 import MarkdownContent from "@/components/MarkdownContent";
+import { NoteExtension, NoteMetadata } from "@/lib/definitions";
 import { getNoteContent, getNoteMetadata, removeNote } from "@/lib/notes.service";
-import { NoteExtension } from "@/lib/definitions";
+import { Log } from "@/lib/services/log";
 import { getLocalDateString } from "@/lib/utils";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useAsyncResult } from "@/hooks/useAsyncResult";
-import { Suspense } from "react";
-import { IconDelete, IconEdit } from "@/components/Icons";
 
 const Wrapper = () => {
   const searchParams = useSearchParams()
   const tag = searchParams.get("tag")!
   const extension = searchParams.get("ext")! as NoteExtension
 
-  const {
-    error: contentError,
-    data: content,
-    loading: loadingContent,
-  } = useAsyncResult(
-    () => getNoteContent(tag, extension),
-    [tag, extension]
-  );
+  const [content, setContent] = useState<string | null>()
+  const [metadata, setMetadata] = useState<NoteMetadata | null>(null)
 
-  const {
-    error: metadataError,
-    data: metadata,
-    loading: loadingMetadata,
-  } = useAsyncResult(
-    () => getNoteMetadata(tag),
-    [tag]
-  );
+  const load = async () => {
+    const [resultContent, resultMetadata] = await Promise.all([getNoteContent(tag, extension), getNoteMetadata(tag)])
+
+    if (resultContent[1] && resultMetadata[1]) {
+
+      setContent(resultContent[1])
+      setMetadata(resultMetadata[1])
+
+      return
+    }
+
+    const messageError = resultContent[0]?.message ?? resultMetadata[0]?.message ?? "Something went wrong";
+
+    Log.error(messageError)
+    toast.error(messageError)
+  }
+
+  useEffect(() => {
+    load();
+  }, [])
 
   const deleteNote = async () => {
 
@@ -51,16 +55,6 @@ const Wrapper = () => {
     window.history.back()
 
   }
-
-  if (loadingContent || loadingMetadata) return <Loading />;
-  if (contentError || metadataError)
-    return (
-      <ErrorDisplay
-        message={[contentError?.message, metadataError?.message]
-          .filter(Boolean)
-          .join("\n")}
-      />
-    );
 
   return (
     <div className="flex flex-col w-full h-full p-1 gap-y-2">

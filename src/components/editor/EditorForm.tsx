@@ -1,7 +1,7 @@
 "use client";
 
 import { useDraft } from "@/context/draft-provider";
-import { useCreateNote } from "@/hooks/useCreateNote";
+import { useSaveNote } from "@/hooks/useSaveNote";
 import { NoteExtension, type Note } from "@/lib/definitions";
 import { FormEvent } from "react";
 
@@ -12,7 +12,7 @@ type Props = {
 }
 
 export default function EditorForm({ contentField, buttons, extension }: Props) {
-  const { submit } = useCreateNote();
+  const { submit } = useSaveNote();
   const { draft, setDraftNote } = useDraft()
 
   const handleAction = async (e: FormEvent<HTMLFormElement>) => {
