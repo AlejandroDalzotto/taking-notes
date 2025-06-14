@@ -6,7 +6,7 @@ mod utils;
 use std::{path::PathBuf, sync::Arc};
 
 use commands::notes;
-use tauri::{Emitter, Manager};
+use tauri::Manager;
 
 static MANAGER_METADATA_FILE: &str = "notes-manager.json";
 
