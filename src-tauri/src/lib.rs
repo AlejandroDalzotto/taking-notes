@@ -1,10 +1,12 @@
 mod commands;
 mod notes_manager;
+mod migration;
+mod utils;
 
 use std::{path::PathBuf, sync::Arc};
 
 use commands::notes;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 static MANAGER_METADATA_FILE: &str = "notes-manager.json";
 
@@ -65,7 +67,15 @@ pub fn run() {
 
             // Manage app directories and paths
             let app_dirs = get_app_dirs(app);
+            let manager_path = app_dirs.manager_path.to_owned();
+
+            let needs_migration = migration::check_for_migration(&manager_path)?;
+            if needs_migration {
+                migration::migrate_v1_to_v2(&manager_path)?;
+            }
+
             app.manage(app_dirs);
+
 
             Ok(())
         })
