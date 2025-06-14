@@ -6,7 +6,7 @@ mod utils;
 use std::{path::PathBuf, sync::Arc};
 
 use commands::notes;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 static MANAGER_METADATA_FILE: &str = "notes-manager.json";
 
@@ -71,7 +71,9 @@ pub fn run() {
 
             let needs_migration = migration::check_for_migration(&manager_path)?;
             if needs_migration {
+                app.emit("migration-started", "Checking for file integrity, please do not close the app.").unwrap();
                 migration::migrate_v1_to_v2(&manager_path)?;
+                app.emit("migration-finished", "Notes were updated to the latest version successfully!").unwrap();
             }
 
             app.manage(app_dirs);
