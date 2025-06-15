@@ -1,6 +1,6 @@
 "use client";
 
-import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import { createContext, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -13,17 +13,20 @@ export default function MigrationProvider({
 }) {
 
   useEffect(() => {
-    const unlistenStart = listen<string>('migration-started', (e) => {
-      toast.loading(e.payload)
-    })
-    const unlistenFinish = listen<string>('migration-finished', (e) => {
-      toast.success(e.payload)
+    invoke<boolean>('check_for_migration').then(needsMigration => {
+      toast.info('Checking files integrity, please do not close the app.', { duration: 1500 })
+
+      if (needsMigration) {
+        invoke('migrate_v1_to_v2')
+          .then(() => {
+            toast.success('Notes checked successfully! Migration performed from V1 to V2.')
+          })
+          .catch(() => {
+            toast.error('Something went wrong, please restart the app or ask for help.')
+          })
+      }
     })
 
-    return () => {
-      unlistenStart.then(f => f());
-      unlistenFinish.then(f => f());
-    }
   }, []);
 
 

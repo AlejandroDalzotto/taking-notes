@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use tauri::{command, State};
 
+use crate::{AppDirs};
 use crate::utils;
 
 // La primera versión de la nota
@@ -91,9 +93,11 @@ impl DatabaseV2 {
     }
 }
 
-pub fn check_for_migration(manager_path: &str) -> Result<bool, Box<dyn std::error::Error>> {
+#[command]
+pub fn check_for_migration(app_state: State<'_, AppDirs>) -> Result<bool, String> {
+    let manager_path = app_state.manager_path.to_string();
     // Cargar el esquema crudo
-    let raw_manager_data = std::fs::read_to_string(manager_path)?;
+    let raw_manager_data = std::fs::read_to_string(manager_path).expect("Error reading file manager");
 
     // Intentamos parsesr como V2
     let parsed_v2 = serde_json::from_str::<DatabaseV2>(&raw_manager_data);
@@ -111,17 +115,19 @@ pub fn check_for_migration(manager_path: &str) -> Result<bool, Box<dyn std::erro
     }
 }
 
-pub fn migrate_v1_to_v2(manager_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+#[command]
+pub fn migrate_v1_to_v2(app_state: State<'_, AppDirs>) -> Result<(), String> {
+    let manager_path = app_state.manager_path.to_string();
     // load the v1 schema
-    let data_v1 = std::fs::read_to_string(manager_path)?;
-    let notes_v1: Vec<NoteV1> = serde_json::from_str(&data_v1)?;
+    let data_v1 = std::fs::read_to_string(&manager_path).expect("Error reading file manager");
+    let notes_v1: Vec<NoteV1> = serde_json::from_str(&data_v1).expect("Error trying to parse json data");
 
     // migrate to v2
     let db_v2 = DatabaseV2::migrate_from_v1(notes_v1);
 
     // save the new schema
-    let serialized = serde_json::to_string(&db_v2)?;
-    utils::atomic_write(manager_path, &serialized)?;
+    let serialized = serde_json::to_string(&db_v2).expect("Error trying to parse data to string");
+    utils::atomic_write(manager_path, &serialized).expect("Error trying to save json data");
 
     Ok(())
 }
