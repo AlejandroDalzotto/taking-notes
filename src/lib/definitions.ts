@@ -6,16 +6,23 @@ export enum NoteExtension {
 
 export type Icon = "home" | "list" | "add";
 
-export type Note = {
-  title: string;
-  content: string;
-  extension: NoteExtension;
+export type AccessControl = {
+
 }
 
-export interface NoteMetadata extends Omit<Note, "content"> {
-  tag: string;
+export type NoteEntry = {
+  title: string;
+  content: string;
+  type: NoteExtension;
+}
+
+export interface Note extends Omit<NoteEntry, "content"> {
+  id: string;
   createdAt: number;
   updatedAt: number;
+  accessControl: AccessControl | null;
+  isFavorite: boolean;
+  tags: string[];
 }
 
 export interface NavLink {
