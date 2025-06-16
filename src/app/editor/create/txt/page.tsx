@@ -10,7 +10,7 @@ export default function CreateTxtNotePage() {
 
   return (
     <EditorContainer>
-      <EditorForm extension={NoteExtension.PLAINTEXT} buttons={
+      <EditorForm type={NoteExtension.PLAINTEXT} buttons={
         <>
           <ButtonPreviewHtml />
         </>

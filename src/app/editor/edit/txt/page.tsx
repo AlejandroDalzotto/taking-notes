@@ -5,7 +5,7 @@ import EditorContainer from "@/components/editor/EditorContainer";
 import EditorForm from "@/components/editor/EditorForm";
 import PlainContentField from "@/components/editor/PlainContentField";
 import { useDraft } from "@/context/draft-provider";
-import { type Note, NoteExtension } from "@/lib/definitions";
+import { type NoteEntry, NoteExtension } from "@/lib/definitions";
 import { getNoteContent, getNoteMetadata } from "@/lib/notes.service";
 import { Log } from "@/lib/services/log";
 import { useSearchParams } from "next/navigation";
@@ -24,7 +24,7 @@ const EditNoteWrapped = () => {
       const resultMetadata = await getNoteMetadata(tag);
 
       if (resultContent[1] && resultMetadata[1]) {
-        const note: Note = {
+        const note: NoteEntry = {
           title: resultMetadata[1].title,
           content: resultContent[1],
           extension: NoteExtension.PLAINTEXT

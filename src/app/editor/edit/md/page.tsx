@@ -6,7 +6,7 @@ import EditorContainer from "@/components/editor/EditorContainer";
 import EditorForm from "@/components/editor/EditorForm";
 import MarkdownContentField from "@/components/editor/MarkdownContentField";
 import { useDraft } from "@/context/draft-provider";
-import { NoteExtension, type Note } from "@/lib/definitions";
+import { NoteExtension, type NoteEntry } from "@/lib/definitions";
 import { getNoteContent, getNoteMetadata } from "@/lib/notes.service";
 import { Log } from "@/lib/services/log";
 import { useSearchParams } from "next/navigation";
@@ -25,7 +25,7 @@ const Wrapper = () => {
       const resultMetadata = await getNoteMetadata(tag);
 
       if (resultContent[1] && resultMetadata[1]) {
-        const note: Note = {
+        const note: NoteEntry = {
           title: resultMetadata[1].title,
           content: resultContent[1],
           extension: NoteExtension.MARKDOWN
