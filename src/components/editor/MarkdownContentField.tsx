@@ -63,7 +63,7 @@ export default function MarkdownContentField() {
         onChange={(e) => setDraftNote({
           title: draft.note?.title ?? "",
           content: e.target.value,
-          extension: NoteExtension.MARKDOWN
+          type: NoteExtension.MARKDOWN
         })}
         spellCheck={false}
         className="absolute inset-0 z-10 p-4 overflow-y-auto font-mono text-lg text-transparent bg-transparent outline-none resize-none caret-blue-50 placeholder:text-white/50 peer/input"

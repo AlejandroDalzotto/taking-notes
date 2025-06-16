@@ -12,7 +12,7 @@ export default function PlainContentField() {
       onChange={(e) => setDraftNote({
         title: draft.note?.title ?? "",
         content: e.target.value,
-        extension: NoteExtension.PLAINTEXT
+        type: NoteExtension.PLAINTEXT
       })}
       autoComplete="off"
       name="content"

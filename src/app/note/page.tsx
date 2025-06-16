@@ -2,7 +2,7 @@
 
 import { IconDelete, IconEdit } from "@/components/Icons";
 import MarkdownContent from "@/components/MarkdownContent";
-import { NoteExtension, NoteMetadata } from "@/lib/definitions";
+import { NoteExtension, Note } from "@/lib/definitions";
 import { getNoteContent, getNoteMetadata, removeNote } from "@/lib/notes.service";
 import { Log } from "@/lib/services/log";
 import { getLocalDateString } from "@/lib/utils";
@@ -17,7 +17,7 @@ const Wrapper = () => {
   const extension = searchParams.get("ext")! as NoteExtension
 
   const [content, setContent] = useState<string | null>()
-  const [metadata, setMetadata] = useState<NoteMetadata | null>(null)
+  const [metadata, setMetadata] = useState<Note | null>(null)
 
   const load = async () => {
     const [resultContent, resultMetadata] = await Promise.all([getNoteContent(tag, extension), getNoteMetadata(tag)])

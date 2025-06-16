@@ -2,16 +2,16 @@
 
 import { useDraft } from "@/context/draft-provider";
 import { useSaveNote } from "@/hooks/useSaveNote";
-import { NoteExtension, type Note } from "@/lib/definitions";
+import { NoteExtension, type NoteEntry } from "@/lib/definitions";
 import { FormEvent } from "react";
 
 type Props = {
   contentField: React.ReactNode,
   buttons: React.ReactNode,
-  extension: NoteExtension,
+  type: NoteExtension,
 }
 
-export default function EditorForm({ contentField, buttons, extension }: Props) {
+export default function EditorForm({ contentField, buttons, type }: Props) {
   const { submit } = useSaveNote();
   const { draft, setDraftNote } = useDraft()
 
@@ -19,10 +19,10 @@ export default function EditorForm({ contentField, buttons, extension }: Props) 
     e.preventDefault()
     const formData = new FormData(e.currentTarget);
 
-    const entry: Note = {
+    const entry: NoteEntry = {
       title: formData.get("title") as string,
       content: formData.get("content") as string,
-      extension: NoteExtension.PLAINTEXT,
+      type: NoteExtension.PLAINTEXT,
     };
 
     await submit(entry)
@@ -35,7 +35,7 @@ export default function EditorForm({ contentField, buttons, extension }: Props) 
         onChange={(e) => setDraftNote({
           title: e.target.value,
           content: draft.note?.content ?? "",
-          extension,
+          type,
         })}
         spellCheck={false}
         autoComplete="off"
