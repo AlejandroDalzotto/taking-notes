@@ -1,11 +1,11 @@
-import type { NoteMetadata } from "@/lib/definitions";
+import type { Note } from "@/lib/definitions";
 import { getNotesByTerm, getNotesMetadata } from "@/lib/notes.service";
 import { Log } from "@/lib/services/log";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export const useFetchNotesMetadata = () => {
-  const [metadata, setMetadata] = useState<NoteMetadata[]>([])
+  const [metadata, setMetadata] = useState<Map<string, Note>>(new Map())
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -20,14 +20,19 @@ export const useFetchNotesMetadata = () => {
 
       if (!search) {
         const data = await getNotesMetadata()
-        setMetadata(data)
+
+        Object.entries(data).forEach(([key, value]) => {
+          setMetadata(map => new Map(map.set(key, value)));
+        });
+        console.log(data instanceof Map)
         return
       }
 
-      const filteredValues = await getNotesByTerm(search);
-      setMetadata(filteredValues)
+      // const filteredValues = await getNotesByTerm(search);
+      // setMetadata(filteredValues)
     } catch (e) {
       Log.error("Error loading notes metadata", (e as Error).message)
+      console.log({ e })
       setError(true)
     } finally {
       setIsLoading(false)
