@@ -1,8 +1,7 @@
-import type { NoteExtension, NoteEntry, NoteMetadata } from "./definitions"
+import { Log } from "@/lib/services/log"
 import { validateNoteBody } from "@/lib/validation.service"
 import { invoke } from "@tauri-apps/api/core"
-import { generateRandomUniqueTag } from "@/lib/utils"
-import { Log } from "@/lib/services/log"
+import type { Note, NoteEntry, NoteExtension } from "./definitions"
 
 /**
  * A method that returns a list of information about the files already created.
@@ -11,14 +10,14 @@ import { Log } from "@/lib/services/log"
  */
 export const getNotesMetadata = async () => {
 
-  const data = await invoke<NoteMetadata[]>("get_all_notes_metadata")
+  const data = await invoke<Record<string, Note>>("get_all_notes_metadata")
 
   return data;
 }
 
-export const getNoteMetadata = async (tag: string): Promise<[Error, null] | [null, NoteMetadata]> => {
+export const getNoteMetadata = async (tag: string): Promise<[Error, null] | [null, Note]> => {
   try {
-    const markdown = await invoke<NoteMetadata>("get_note_metadata", { tag })
+    const markdown = await invoke<Note>("get_note_metadata", { tag })
     return [null, markdown];
   } catch (error) {
     return [error as Error, null]
@@ -45,7 +44,7 @@ export const getNoteContent = async (tag: string, extension: string): Promise<[E
  */
 export const getNotesByTerm = async (searchTerm: string) => {
   try {
-    const data = await invoke<NoteMetadata[]>("search_notes_by_term", { term: searchTerm });
+    const data = await invoke<Note[]>("search_notes_by_term", { term: searchTerm });
     return data
   } catch (e) {
     Log.error("Error getting notes by term", (e as Error).message)
@@ -53,25 +52,19 @@ export const getNotesByTerm = async (searchTerm: string) => {
   }
 }
 
-export const createNote = async (values: NoteEntry): Promise<[Error, null] | [null, string]> => {
+export const createNote = async (entry: NoteEntry): Promise<[Error, null] | [null, string]> => {
 
-  // Validating fields
-  const [areFieldsValid, improvementsToConsider] = validateNoteBody(values)
+  const [areFieldsValid, improvementsToConsider] = validateNoteBody(entry)
 
   if (!areFieldsValid) {
-    return [new Error(improvementsToConsider!), null]
+    return [new Error(improvementsToConsider), null]
   }
-
-  const tag = generateRandomUniqueTag();
 
   try {
 
-    const [hasNoteSucceeded, hasManager] = await Promise.all([
-      invoke<boolean>("create_note", { tag, fileExtension: values.fileExtension, content: values.content }),
-      invoke<boolean>("create_note_metadata", { tag, title: values.title, fileExtension: values.fileExtension })
-    ]);
+    const isNoteCreated = await invoke<boolean>("create_note", { entry });
 
-    if (hasNoteSucceeded !== true || hasManager !== true) {
+    if (!isNoteCreated) {
       throw new Error("Error creating note");
     }
 
