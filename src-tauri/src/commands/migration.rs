@@ -5,6 +5,7 @@ use tauri::{command, State};
 
 use crate::{AppDirs};
 use crate::utils;
+use std::fmt;
 
 // La primera versión de la nota
 #[derive(Serialize, Deserialize, Debug)]
@@ -47,6 +48,16 @@ impl NoteType {
         match file_extension {
             "md" => NoteType::MD,
             _ => NoteType::TXT,
+        }
+    }
+}
+
+
+impl fmt::Display for NoteType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NoteType::MD => write!(f, "md"),
+            NoteType::TXT => write!(f, "txt"),
         }
     }
 }
