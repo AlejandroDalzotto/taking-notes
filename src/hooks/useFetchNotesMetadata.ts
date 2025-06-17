@@ -36,7 +36,6 @@ export const useFetchNotesMetadata = () => {
       setMetadata(map)
     } catch (e) {
       Log.error("Error loading notes metadata", (e as Error).message)
-      console.log({ e })
       setError(true)
     } finally {
       setIsLoading(false)
