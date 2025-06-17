@@ -2,8 +2,8 @@
 
 import { IconDelete, IconEdit } from "@/components/Icons";
 import MarkdownContent from "@/components/MarkdownContent";
-import { NoteExtension, Note } from "@/lib/definitions";
-import { getNoteContent, getNoteMetadata, removeNote } from "@/lib/notes.service";
+import { Note, NoteExtension } from "@/lib/definitions";
+import { getNote, removeNote } from "@/lib/notes.service";
 import { Log } from "@/lib/services/log";
 import { getLocalDateString } from "@/lib/utils";
 import Link from "next/link";
@@ -13,24 +13,24 @@ import { toast } from "sonner";
 
 const Wrapper = () => {
   const searchParams = useSearchParams()
-  const tag = searchParams.get("tag")!
-  const extension = searchParams.get("ext")! as NoteExtension
+  const id = searchParams.get("id")!
+  const type = searchParams.get("type")! as NoteExtension
 
   const [content, setContent] = useState<string | null>()
   const [metadata, setMetadata] = useState<Note | null>(null)
 
   const load = async () => {
-    const [resultContent, resultMetadata] = await Promise.all([getNoteContent(tag, extension), getNoteMetadata(tag)])
+    const [error, result] = await getNote(id, type)
 
-    if (resultContent[1] && resultMetadata[1]) {
+    if (!error) {
 
-      setContent(resultContent[1])
-      setMetadata(resultMetadata[1])
+      setContent(result[0])
+      setMetadata(result[1])
 
       return
     }
 
-    const messageError = resultContent[0]?.message ?? resultMetadata[0]?.message ?? "Something went wrong";
+    const messageError = error.message || "Something went wrong";
 
     Log.error(messageError)
     toast.error(messageError)
@@ -42,7 +42,7 @@ const Wrapper = () => {
 
   const deleteNote = async () => {
 
-    const [error, message] = await removeNote(tag, extension)
+    const [error, message] = await removeNote(id, type)
 
     if (error) {
       toast.error(error.message)
@@ -64,7 +64,7 @@ const Wrapper = () => {
         </h1>
       </header>
       <section className="w-full h-full p-2 overflow-y-auto border rounded-lg lg:px-6 lg:py-4 border-white/5">
-        {content && metadata && metadata.extension === NoteExtension.MARKDOWN ? (
+        {content && metadata && metadata.type === NoteExtension.MARKDOWN ? (
           <MarkdownContent content={content} />
         ) : (
           <div className="prose whitespace-pre-line prose-invert prose-img:rounded-lg prose-video:rounded-lg">
@@ -82,7 +82,7 @@ const Wrapper = () => {
           </button>
           <Link
             title={`Edit ${metadata?.title ?? "undefined"}`}
-            href={`/editor/edit/${extension}?tag=${tag}`}
+            href={`/editor/edit/${type}?id=${id}`}
             className="w-8 h-8 transition-all border rounded-md group/edit hover:bg-green-500/5 hover:border-green-500/5 hover:scale-110 border-white/5 bg-white/5"
           >
             <IconEdit size={32} className="fill-neutral-50 p-0.5 group-hover/edit:fill-green-600 transition-colors" />
