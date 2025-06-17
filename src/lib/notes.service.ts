@@ -4,9 +4,12 @@ import { invoke } from "@tauri-apps/api/core"
 import type { Note, NoteEntry, NoteExtension } from "./definitions"
 
 /**
- * A method that returns a list of information about the files already created.
- * 
- * @returns An array with the information.
+ * Retrieves the metadata for all notes.
+ *
+ * Invokes the Tauri command `get_all_notes_metadata` to fetch a record containing
+ * information about all notes currently created.
+ *
+ * @returns A promise that resolves to a record where the keys are note identifiers and the values are {@link Note} objects.
  */
 export const getNotesMetadata = async () => {
 
@@ -15,10 +18,21 @@ export const getNotesMetadata = async () => {
   return data;
 }
 
-export const getNoteMetadata = async (tag: string): Promise<[Error, null] | [null, Note]> => {
+/**
+ * Retrieves a specific note by its identifier and extension type.
+ *
+ * Invokes the Tauri command `get_note` to fetch the note data.
+ *
+ * @param id - The unique identifier of the note to retrieve.
+ * @param type - The extension/type of the note (e.g., "md", "txt").
+ * @returns A promise that resolves to a tuple:
+ *   - On success: [null, [string, Note]] where the string is the note's content and Note is the note's metadata.
+ *   - On failure: [Error, null] with the error encountered during retrieval.
+ */
+export const getNote = async (id: string, type: NoteExtension): Promise<[Error, null] | [null, [string, Note]]> => {
   try {
-    const markdown = await invoke<Note>("get_note_metadata", { tag })
-    return [null, markdown];
+    const note = await invoke<[string, Note]>("get_note", { id, type })
+    return [null, note];
   } catch (error) {
     return [error as Error, null]
   }
@@ -26,25 +40,12 @@ export const getNoteMetadata = async (tag: string): Promise<[Error, null] | [nul
 }
 
 /**
- * Get the content of a markdown created.
- */
-export const getNoteContent = async (tag: string, extension: string): Promise<[Error, null] | [null, string]> => {
-  try {
-    const content = await invoke<string>("get_note_content", { tag, fileExtension: extension })
-
-    return [null, content]
-  } catch (e) {
-    return [e as Error, null]
-  }
-}
-
-/**
  * 
  * Return a filtered list of all markdown's information. Mainly used by search bar.
  */
-export const getNotesByTerm = async (searchTerm: string) => {
+export const getNotesByTerm = async (term: string) => {
   try {
-    const data = await invoke<Note[]>("search_notes_by_term", { term: searchTerm });
+    const data = await invoke<Record<string, Note>>("search_notes_by_term", { term: term });
     return data
   } catch (e) {
     Log.error("Error getting notes by term", (e as Error).message)
@@ -74,36 +75,38 @@ export const createNote = async (entry: NoteEntry): Promise<[Error, null] | [nul
   }
 };
 
-export const editNote = async (tag: string, values: NoteEntry): Promise<[Error | null, string]> => {
+export const editNote = async (id: string, entry: NoteEntry): Promise<[Error, null] | [null, string]> => {
 
   // Validating fields
-  const [areFieldsValid, improvementsToConsider] = validateNoteBody(values)
+  const [areFieldsValid, improvementsToConsider] = validateNoteBody(entry)
 
   if (!areFieldsValid) {
-    return [new Error(improvementsToConsider!), improvementsToConsider!]
+    return [new Error(improvementsToConsider), null]
   }
 
   try {
 
-    await Promise.all([
-      invoke<boolean>("edit_note", { tag, fileExtension: values.fileExtension, content: values.content }),
-      invoke<boolean>("edit_note_metadata", { tag, title: values.title }),
-    ]);
+    const isNoteEdited = await invoke<boolean>("edit_note", { id, entry });
+
+    if (!isNoteEdited) {
+      return [Error('Error trying to edit note.'), null]
+    }
 
     return [null, "Note edited successfully."];
   } catch (err) {
-    return [err instanceof Error ? err : new Error(String(err)), "An error occurred while creating the note."];
+    return [err instanceof Error ? err : new Error(String(err)), null];
   }
 }
 
 
-export const removeNote = async (tag: string, extension: NoteExtension): Promise<[Error, null] | [null, string]> => {
+export const removeNote = async (id: string, type: NoteExtension): Promise<[Error, null] | [null, string]> => {
 
   try {
-    await Promise.all([
-      invoke<boolean>("remove_note", { tag, fileExtension: extension }),
-      invoke<boolean>("remove_note_metadata", { tag })
-    ]);
+    const isNoteDeleted = await invoke<boolean>("remove_note", { id, type })
+
+    if (!isNoteDeleted) {
+      return [Error('Error trying to delete note'), null]
+    }
 
     return [null, "Note removed successfully."];
   } catch (err) {
