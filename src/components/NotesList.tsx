@@ -30,7 +30,7 @@ export default function NotesList() {
   }
 
   return (
-    <div className="grid w-full grid-cols-1 gap-5 overflow-y-auto grow lg:grid-cols-2 xl:grid-cols-3">
+    <div className="grid w-full content-start grid-cols-1 gap-5 overflow-y-auto grow lg:grid-cols-2 xl:grid-cols-3">
       {
         Array.from(notes.entries())
           .sort(([, a], [, b]) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())

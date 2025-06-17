@@ -25,7 +25,7 @@ export default function EditorForm({ contentField, buttons, type }: Props) {
       type: NoteExtension.PLAINTEXT,
     };
 
-    await submit(entry)
+    await submit(entry, draft.id || undefined)
   }
 
   return (
