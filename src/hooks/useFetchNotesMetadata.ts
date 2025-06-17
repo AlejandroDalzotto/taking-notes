@@ -10,7 +10,7 @@ export const useFetchNotesMetadata = () => {
   const [error, setError] = useState(false);
 
   const searchParams = useSearchParams()
-  const search = searchParams.get("search") ?? ""
+  const search = searchParams.get("search")
 
   const fetchNotes = async () => {
     setError(false)
@@ -24,12 +24,16 @@ export const useFetchNotesMetadata = () => {
         Object.entries(data).forEach(([key, value]) => {
           setMetadata(map => new Map(map.set(key, value)));
         });
-        console.log(data instanceof Map)
         return
       }
+      const filteredValues = await getNotesByTerm(search);
 
-      // const filteredValues = await getNotesByTerm(search);
-      // setMetadata(filteredValues)
+      const map = new Map()
+      Object.entries(filteredValues).forEach(([key, value]) => {
+        map.set(key, value);
+      });
+
+      setMetadata(map)
     } catch (e) {
       Log.error("Error loading notes metadata", (e as Error).message)
       console.log({ e })
