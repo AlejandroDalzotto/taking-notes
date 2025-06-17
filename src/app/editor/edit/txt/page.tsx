@@ -6,7 +6,7 @@ import EditorForm from "@/components/editor/EditorForm";
 import PlainContentField from "@/components/editor/PlainContentField";
 import { useDraft } from "@/context/draft-provider";
 import { type NoteEntry, NoteExtension } from "@/lib/definitions";
-import { getNoteContent, getNoteMetadata } from "@/lib/notes.service";
+import { getNote } from "@/lib/notes.service";
 import { Log } from "@/lib/services/log";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
@@ -15,28 +15,27 @@ import { toast } from "sonner";
 const EditNoteWrapped = () => {
 
   const searchParams = useSearchParams()
-  const tag = searchParams.get("tag")!
-  const { draft, setTag, setDraftNote } = useDraft()
+  const id = searchParams.get("id")!
+  const { draft, setId, setDraftNote } = useDraft()
 
   const loadData = async () => {
-    if (!draft.tag) {
-      const resultContent = await getNoteContent(tag, NoteExtension.PLAINTEXT);
-      const resultMetadata = await getNoteMetadata(tag);
+    if (!draft.id) {
+      const [error, result] = await getNote(id, NoteExtension.PLAINTEXT);
 
-      if (resultContent[1] && resultMetadata[1]) {
+      if (!error) {
         const note: NoteEntry = {
-          title: resultMetadata[1].title,
-          content: resultContent[1],
-          extension: NoteExtension.PLAINTEXT
+          title: result[1].title,
+          content: result[0],
+          type: NoteExtension.PLAINTEXT
         }
 
         setDraftNote(note)
-        setTag(tag)
+        setId(id)
 
         return
       }
 
-      const messageError = resultContent[0]?.message ?? resultMetadata[0]?.message ?? "Something went wrong";
+      const messageError = error.message || "Something went wrong";
 
       Log.error(messageError)
       toast.error(messageError)
@@ -46,11 +45,11 @@ const EditNoteWrapped = () => {
 
   useEffect(() => {
     loadData();
-  }, [tag])
+  }, [id])
 
   return (
     <EditorContainer>
-      <EditorForm extension={NoteExtension.PLAINTEXT} buttons={
+      <EditorForm type={NoteExtension.PLAINTEXT} buttons={
         <>
           <ButtonPreviewHtml />
         </>
