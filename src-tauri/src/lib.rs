@@ -1,5 +1,4 @@
 mod commands;
-mod notes_manager;
 mod utils;
 
 use std::{path::PathBuf, sync::Arc};
@@ -50,15 +49,11 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             notes::get_all_notes_metadata,
-            // notes::get_note_metadata,
-            // notes::get_note_content,
+            notes::get_note,
             notes::create_note,
-            // notes::create_note_metadata,
-            // notes::search_notes_by_term,
-            // notes::edit_note,
-            // notes::edit_note_metadata,
-            // notes::remove_note,
-            // notes::remove_note_metadata,
+            notes::search_notes_by_term,
+            notes::edit_note,
+            notes::remove_note,
             notes::get_total_notes_count,
             migration::check_for_migration,
             migration::migrate_v1_to_v2,

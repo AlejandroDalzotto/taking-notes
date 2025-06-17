@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{command, State};
 
-use crate::{AppDirs};
 use crate::utils;
-use std::fmt;
+use crate::AppDirs;
+use std::{fmt, fs};
 
 // La primera versión de la nota
 #[derive(Serialize, Deserialize, Debug)]
@@ -18,7 +18,7 @@ pub struct NoteV1 {
     pub file_extension: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct NoteV2 {
     pub id: String,
@@ -31,12 +31,12 @@ pub struct NoteV2 {
     pub r#type: NoteType,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccessControl {
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum NoteType {
     MD,
@@ -51,7 +51,6 @@ impl NoteType {
         }
     }
 }
-
 
 impl fmt::Display for NoteType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -105,24 +104,29 @@ impl DatabaseV2 {
 }
 
 #[command]
-pub fn check_for_migration(app_state: State<'_, AppDirs>) -> Result<bool, String> {
-    let manager_path = app_state.manager_path.to_string();
-    // Cargar el esquema crudo
-    let raw_manager_data = std::fs::read_to_string(manager_path).expect("Error reading file manager");
+pub fn check_for_migration(app_state: State<'_, AppDirs>) -> Result<bool, ()> {
+    let manager_path = app_state.manager_path.as_str();
 
-    // Intentamos parsesr como V2
-    let parsed_v2 = serde_json::from_str::<DatabaseV2>(&raw_manager_data);
+    if fs::exists(manager_path).unwrap() {
+        // Cargar el esquema crudo
+        let raw_manager_data = std::fs::read_to_string(manager_path).unwrap();
 
-    match parsed_v2 {
-        Ok(_) => {
-            // Si parsed_v2 fue OK, significa que NO necesita migrar
-            Ok(false)
+        // Intentamos parsesr como V2
+        let parsed_v2 = serde_json::from_str::<DatabaseV2>(&raw_manager_data);
+
+        match parsed_v2 {
+            Ok(_) => {
+                // Si parsed_v2 fue OK, significa que NO necesita migrar
+                Ok(false)
+            }
+            Err(_) => {
+                // Si parsed_v2 falla, eso significa que el esquema es V1
+                // o que el esquema tiene un problema
+                Ok(true)
+            }
         }
-        Err(_) => {
-            // Si parsed_v2 falla, eso significa que el esquema es V1
-            // o que el esquema tiene un problema
-            Ok(true)
-        }
+    } else {
+        Ok(false)
     }
 }
 
@@ -131,7 +135,8 @@ pub fn migrate_v1_to_v2(app_state: State<'_, AppDirs>) -> Result<(), String> {
     let manager_path = app_state.manager_path.to_string();
     // load the v1 schema
     let data_v1 = std::fs::read_to_string(&manager_path).expect("Error reading file manager");
-    let notes_v1: Vec<NoteV1> = serde_json::from_str(&data_v1).expect("Error trying to parse json data");
+    let notes_v1: Vec<NoteV1> =
+        serde_json::from_str(&data_v1).expect("Error trying to parse json data");
 
     // migrate to v2
     let db_v2 = DatabaseV2::migrate_from_v1(notes_v1);

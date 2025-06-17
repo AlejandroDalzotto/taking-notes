@@ -1,10 +1,19 @@
 use std::collections::HashMap;
 use std::fs;
 
+use crate::commands::migration::NoteType;
 use crate::migration::{DatabaseV2, NoteV2, SchemaVersion};
-use crate::{notes_manager::*, utils, AppDirs};
+use crate::{utils, AppDirs};
 use tauri::State;
 use uuid::Uuid;
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteEntry {
+    pub title: String,
+    pub content: String,
+    pub r#type: NoteType,
+}
 
 #[tauri::command]
 pub async fn get_all_notes_metadata(
@@ -22,53 +31,40 @@ pub async fn get_all_notes_metadata(
     Ok(manager.notes)
 }
 
-// #[command]
-// pub async fn get_note_metadata(
-//     tag: String,
-//     app_state: State<'_, AppDirs>,
-// ) -> Result<NoteV2, NoteError> {
-//     let manager_path = app_state.manager_path.to_string();
+#[tauri::command]
+pub async fn get_note(
+    id: String,
+    r#type: String,
+    app_state: State<'_, AppDirs>,
+) -> Result<(String, NoteV2), ()> {
+    let file_path = app_state.app_data_path.join(format!("{}.{}", &id, r#type));
+    let manager_path = app_state.manager_path.as_str();
 
-//     let file_data = NotesManager::read_note_metadata(manager_path, tag);
+    let manager = if fs::exists(manager_path).unwrap() {
+        let raw_json = fs::read_to_string(manager_path).unwrap();
+        serde_json::from_str::<DatabaseV2>(&raw_json).unwrap()
+    } else {
+        DatabaseV2 {
+            notes: HashMap::new(),
+            schema_version: SchemaVersion::V2,
+        }
+    };
 
-//     file_data.map_err(|e| {
-//         NoteError::new(
-//             "Error trying to get note information",
-//             &e.to_string(),
-//             "get_note_metadata",
-//         )
-//     })
-// }
+    let content = fs::read_to_string(file_path).unwrap();
 
-// #[command]
-// pub async fn get_note_content(
-//     tag: String,
-//     file_extension: String,
-//     app_state: State<'_, AppDirs>,
-// ) -> Result<String, NoteError> {
-//     let file_name = format!("{}.{}", tag, file_extension);
-
-//     let path = app_state.app_data_path.join(file_name);
-
-//     let file_path = path.to_str().unwrap().to_string();
-//     let file_content = NotesManager::read_note_content(file_path);
-
-//     file_content.map_err(|e| {
-//         NoteError::new(
-//             "Error trying to get note content",
-//             &e.to_string(),
-//             "get_note_content",
-//         )
-//     })
-// }
+    let note = manager.notes.get(&id).unwrap().clone();
+    Ok((content, note))
+}
 
 #[tauri::command]
 pub async fn create_note(entry: NoteEntry, app_state: State<'_, AppDirs>) -> Result<bool, ()> {
-    let file_path = app_state.app_data_path.to_str().unwrap();
+    let id = Uuid::new_v4().to_string();
+    let file_path = app_state
+        .app_data_path
+        .join(format!("{}.{}", &id, &entry.r#type));
     let manager_path = app_state.manager_path.as_str();
 
     let now = chrono::Utc::now().timestamp_millis() as u64;
-    let id = Uuid::new_v4().to_string();
 
     // Create new entry
     let new_note = NoteV2 {
@@ -109,107 +105,102 @@ pub async fn create_note(entry: NoteEntry, app_state: State<'_, AppDirs>) -> Res
     Ok(true)
 }
 
-// #[command]
-// pub async fn search_notes_by_term(
-//     term: String,
-//     app_state: State<'_, AppDirs>,
-// ) -> Result<Vec<NoteMetadata>, NoteError> {
-//     let manager_path = app_state.manager_path.to_string();
+#[tauri::command]
+pub async fn search_notes_by_term(
+    term: String,
+    app_state: State<'_, AppDirs>,
+) -> Result<HashMap<String, NoteV2>, ()> {
+    let manager_path = app_state.manager_path.as_str();
 
-//     let files_data = NotesManager::search_notes_metadata(manager_path, term);
+    let raw_json = match fs::read_to_string(manager_path) {
+        Ok(json) => json,
+        Err(_) => return Err(()),
+    };
 
-//     files_data.map_err(|e| {
-//         NoteError::new(
-//             "Error trying to search notes",
-//             &e.to_string(),
-//             "search_notes_by_term",
-//         )
-//     })
-// }
+    let manager = match serde_json::from_str::<DatabaseV2>(&raw_json) {
+        Ok(db) => db,
+        Err(_) => return Err(()),
+    };
 
-// #[command]
-// pub async fn edit_note(
-//     tag: String,
-//     file_extension: String,
-//     content: String,
-//     app_state: State<'_, AppDirs>,
-// ) -> Result<bool, NoteError> {
-//     let file_name = format!("{}.{}", tag, file_extension);
+    let lowercased_term = term.to_lowercase();
 
-//     let path = app_state.app_data_path.join(file_name);
+    let filtered_notes = manager
+        .notes
+        .into_iter()
+        .filter(|(_key, note)| note.title.to_lowercase().contains(&lowercased_term))
+        .collect();
 
-//     let file_path = path.to_str().unwrap().to_string();
+    Ok(filtered_notes)
+}
 
-//     let result = NotesManager::edit_note_content(file_path, content);
+#[tauri::command]
+pub async fn edit_note(
+    id: String,
+    entry: NoteEntry,
+    app_state: State<'_, AppDirs>,
+) -> Result<bool, ()> {
+    let file_path = app_state
+        .app_data_path
+        .join(format!("{}.{}", &id, &entry.r#type));
+    let manager_path = app_state.manager_path.as_str();
 
-//     result.map_err(|e| {
-//         NoteError::new(
-//             "Error trying to edit note file",
-//             &e.to_string(),
-//             "edit_note",
-//         )
-//     })
-// }
+    if fs::exists(manager_path).unwrap() {
+        let now = chrono::Utc::now().timestamp_millis() as u64;
 
-// #[command]
-// pub async fn edit_note_metadata(
-//     tag: String,
-//     title: String,
-//     app_state: State<'_, AppDirs>,
-// ) -> Result<bool, NoteError> {
-//     let manager_path = app_state.manager_path.to_string();
+        // Read previous entries (if file exists)
+        let raw_json = fs::read_to_string(manager_path).unwrap();
+        let mut manager = serde_json::from_str::<DatabaseV2>(&raw_json).unwrap();
 
-//     let files_data = NotesManager::edit_note_metadata(manager_path, tag, title);
+        if let Some(x) = manager.notes.get_mut(&id) {
+            x.updated_at = now;
+            x.title = entry.title;
+        }
 
-//     files_data.map_err(|e| {
-//         NoteError::new(
-//             "Error trying to edit note metadata",
-//             &e.to_string(),
-//             "edit_note_metadata",
-//         )
-//     })
-// }
+        // Write updated entries list (notes-manager)
+        utils::atomic_write(
+            manager_path,
+            serde_json::to_string(&manager).unwrap().as_str(),
+        )
+        .unwrap();
 
-// #[command]
-// pub async fn remove_note(
-//     tag: String,
-//     file_extension: String,
-//     app_state: State<'_, AppDirs>,
-// ) -> Result<bool, NoteError> {
-//     let file_name = format!("{}.{}", tag, file_extension);
+        utils::atomic_write(file_path, &entry.content).unwrap();
 
-//     let path = app_state.app_data_path.join(file_name);
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
 
-//     let file_path = path.to_str().unwrap().to_string();
+#[tauri::command]
+pub async fn remove_note(
+    id: String,
+    r#type: String,
+    app_state: State<'_, AppDirs>,
+) -> Result<bool, ()> {
+    let file_path = app_state.app_data_path.join(format!("{}.{}", &id, r#type));
+    let manager_path = app_state.manager_path.as_str();
 
-//     let result = NotesManager::remove_note(file_path);
+    if fs::exists(manager_path).unwrap() {
+        // Read previous entries (if file exists)
+        let raw_json = fs::read_to_string(manager_path).unwrap();
+        let mut manager = serde_json::from_str::<DatabaseV2>(&raw_json).unwrap();
 
-//     result.map_err(|e| {
-//         NoteError::new(
-//             "Error trying to remove note file",
-//             &e.to_string(),
-//             "remove_note",
-//         )
-//     })
-// }
+        manager.notes.remove(&id);
 
-// #[command]
-// pub async fn remove_note_metadata(
-//     tag: String,
-//     app_state: State<'_, AppDirs>,
-// ) -> Result<bool, NoteError> {
-//     let manager_path = app_state.manager_path.to_string();
+        // Write updated entries list without the removed one (notes-manager)
+        utils::atomic_write(
+            manager_path,
+            serde_json::to_string(&manager).unwrap().as_str(),
+        )
+        .unwrap();
 
-//     let files_data = NotesManager::remove_note_metadata(manager_path, tag);
+        fs::remove_file(file_path).unwrap();
 
-//     files_data.map_err(|e| {
-//         NoteError::new(
-//             "Error trying to remove note metadata",
-//             &e.to_string(),
-//             "remove_note_metadata",
-//         )
-//     })
-// }
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
 
 #[tauri::command]
 pub async fn get_total_notes_count(app_state: State<'_, AppDirs>) -> Result<usize, ()> {
