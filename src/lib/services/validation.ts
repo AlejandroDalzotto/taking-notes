@@ -1,5 +1,5 @@
-import { MAX_LENGTH_TITLE, MIN_LENGTH_CONTENT, MIN_LENGTH_TITLE } from "./constants"
-import type { NoteEntry } from "./definitions"
+import { MAX_LENGTH_TITLE, MIN_LENGTH_CONTENT, MIN_LENGTH_TITLE } from "@/lib/constants"
+import type { NoteEntry } from "@/lib/definitions"
 
 export const validateNoteBody = (entry: NoteEntry): [false, string] | [true, null] => {
 

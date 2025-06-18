@@ -1,7 +1,7 @@
+import type { Note, NoteEntry, NoteExtension } from "@/lib/definitions"
 import { Log } from "@/lib/services/log"
-import { validateNoteBody } from "@/lib/validation.service"
+import { validateNoteBody } from "@/lib/services/validation"
 import { invoke } from "@tauri-apps/api/core"
-import type { Note, NoteEntry, NoteExtension } from "./definitions"
 
 /**
  * Retrieves the metadata for all notes.
