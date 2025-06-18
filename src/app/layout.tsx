@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
-import localFont from "next/font/local";
-import "./globals.css";
-import Navbar from "@/components/Navbar";
-import { Toaster } from "sonner";
-import UpdaterProvider from "@/context/update-provider";
 import Grainy from "@/components/Grainy";
-import { ModalProvider } from "@/context/modal-provider";
+import Navbar from "@/components/Navbar";
 import DraftProvider from "@/context/draft-provider";
 import MigrationProvider from "@/context/migration-provider";
+import { ModalProvider } from "@/context/modal-provider";
+import UpdaterProvider from "@/context/update-provider";
+import type { Metadata } from "next";
+import localFont from "next/font/local";
+import { Toaster } from "sonner";
+import "./globals.css";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",

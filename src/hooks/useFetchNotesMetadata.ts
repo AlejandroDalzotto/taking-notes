@@ -1,6 +1,6 @@
 import type { Note } from "@/lib/definitions";
-import { getNotesByTerm, getNotesMetadata } from "@/lib/notes.service";
 import { Log } from "@/lib/services/log";
+import { getNotesByTerm, getNotesMetadata } from "@/lib/services/notes";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 

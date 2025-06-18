@@ -1,7 +1,7 @@
 import NotesCount from "@/components/NotesCount";
 import NotesList from "@/components/NotesList";
 import SearchBar from "@/components/SearchBar";
-import { Suspense } from "react"
+import { Suspense } from "react";
 
 export default function NotesPage() {
   return (

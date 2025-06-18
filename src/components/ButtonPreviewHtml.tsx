@@ -1,9 +1,9 @@
 "use client";
 
+import HtmlPreviewModal from "@/components/modals/HtmlPreviewModal";
+import { useDraft } from "@/context/draft-provider";
 import { useModal } from "@/context/modal-provider";
 import { IconHtml } from "./Icons";
-import HtmlPreviewModal from "./modals/HtmlPreviewModal";
-import { useDraft } from "@/context/draft-provider";
 
 export default function ButtonPreviewHtml() {
   const { open } = useModal();

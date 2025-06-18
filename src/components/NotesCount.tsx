@@ -1,6 +1,6 @@
 "use client";
 
-import { getTotalNotesCount } from "@/lib/notes.service";
+import { getTotalNotesCount } from "@/lib/services/notes";
 import { useEffect, useState } from "react";
 
 export default function NotesCount() {

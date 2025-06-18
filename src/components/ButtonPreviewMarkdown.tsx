@@ -1,9 +1,9 @@
 "use client";
 
+import MarkdownPreviewModal from "@/components/modals/MarkdownPreviewModal";
 import { useDraft } from "@/context/draft-provider";
 import { useModal } from "@/context/modal-provider";
 import { IconMarkdown } from "./Icons";
-import MarkdownPreviewModal from "./modals/MarkdownPreviewModal";
 
 export default function ButtonPreviewMarkdown() {
   const { open } = useModal();

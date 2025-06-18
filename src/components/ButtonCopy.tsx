@@ -1,7 +1,7 @@
 "use client";
 
+import { IconCopy } from "@/components/Icons";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { IconCopy } from "./Icons";
 import { toast } from "sonner";
 
 export default function ButtonCopy({ content }: { content: string }) {

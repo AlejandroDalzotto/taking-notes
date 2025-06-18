@@ -1,6 +1,6 @@
 import { useDraft } from "@/context/draft-provider";
 import type { NoteEntry } from "@/lib/definitions";
-import { createNote, editNote } from "@/lib/notes.service";
+import { createNote, editNote } from "@/lib/services/notes";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 

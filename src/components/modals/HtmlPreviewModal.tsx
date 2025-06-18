@@ -1,7 +1,7 @@
 "use client";
+import ButtonCopy from "@/components/ButtonCopy";
 import { marked } from "marked";
 import { highlight } from "sugar-high";
-import ButtonCopy from "../ButtonCopy";
 
 export default function HtmlPreviewModal({ content }: { content: string }) {
 

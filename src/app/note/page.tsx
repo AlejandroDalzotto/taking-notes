@@ -3,8 +3,8 @@
 import { IconDelete, IconEdit } from "@/components/Icons";
 import MarkdownContent from "@/components/MarkdownContent";
 import { Note, NoteExtension } from "@/lib/definitions";
-import { getNote, removeNote } from "@/lib/notes.service";
 import { Log } from "@/lib/services/log";
+import { getNote, removeNote } from "@/lib/services/notes";
 import { getLocalDateString } from "@/lib/utils";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
