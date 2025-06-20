@@ -114,6 +114,21 @@ export const removeNote = async (id: string, type: NoteExtension): Promise<[Erro
   }
 };
 
+export const toggleNoteFavoriteStatus = async (current: boolean): Promise<boolean> => {
+  try {
+    const result = await invoke<boolean>('toggle_favorite', { current });
+
+    if (!result) {
+      throw new Error('Error while trying to toggle note favorite status.');
+    }
+
+    return true
+  } catch (e) {
+    Log.error('Error trying to mark note as favorite.', (e as Error).message);
+    return false;
+  }
+}
+
 export const getTotalNotesCount = async (): Promise<number> => {
   try {
     const count = await invoke<number>("get_total_notes_count");
