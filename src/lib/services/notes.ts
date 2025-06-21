@@ -114,9 +114,9 @@ export const removeNote = async (id: string, type: NoteExtension): Promise<[Erro
   }
 };
 
-export const toggleNoteFavoriteStatus = async (current: boolean): Promise<boolean> => {
+export const toggleNoteFavoriteStatus = async (id: string, current: boolean): Promise<boolean> => {
   try {
-    const result = await invoke<boolean>('toggle_favorite', { current });
+    const result = await invoke<boolean>('toggle_favorite', { id, current });
 
     if (!result) {
       throw new Error('Error while trying to toggle note favorite status.');

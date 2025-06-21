@@ -215,3 +215,33 @@ pub async fn get_total_notes_count(app_state: State<'_, AppDirs>) -> Result<usiz
 
     Ok(manager.notes.len())
 }
+
+#[tauri::command]
+pub async fn toggle_favorite(
+    id: String,
+    current: bool,
+    app_state: State<'_, AppDirs>,
+) -> Result<bool, ()> {
+    let manager_path = app_state.manager_path.as_str();
+
+    if fs::exists(manager_path).unwrap() {
+        // Read previous entries (if file exists)
+        let raw_json = fs::read_to_string(manager_path).unwrap();
+        let mut manager = serde_json::from_str::<DatabaseV2>(&raw_json).unwrap();
+
+        if let Some(item) = manager.notes.get_mut(&id) {
+            item.is_favorite = !current;
+        }
+
+        // Write updated entries list without the removed one (notes-manager)
+        utils::atomic_write(
+            manager_path,
+            serde_json::to_string(&manager).unwrap().as_str(),
+        )
+        .unwrap();
+
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
