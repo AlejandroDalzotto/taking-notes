@@ -25,7 +25,6 @@ export default function ButtonAddFavorite({ note, onToggle }: { note: Note, onTo
     // Call the onToggle prop to update the parent's state
     onToggle(!note.isFavorite); // Pass the new status
 
-    toast.success(`Note ${note.id} toggled to ${!note.isFavorite ? 'favorite' : 'unfavorite'}`) // Update toast message
     setIsLoading(false)
   }
 
