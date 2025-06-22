@@ -1,5 +1,6 @@
 "use client";
 
+import ButtonAddFavorite from "@/components/ButtonAddFavorite";
 import { IconDelete, IconEdit } from "@/components/Icons";
 import MarkdownContent from "@/components/MarkdownContent";
 import { Note, NoteExtension } from "@/lib/definitions";
@@ -23,25 +24,31 @@ const Wrapper = () => {
     const [error, result] = await getNote(id, type)
 
     if (!error) {
-
       setContent(result[0])
       setMetadata(result[1])
-
       return
     }
 
     const messageError = error.message || "Something went wrong";
-
     Log.error(messageError)
     toast.error(messageError)
   }
 
+  // Handler for when the favorite status is toggled
+  const handleFavoriteToggle = (newStatus: boolean) => {
+    if (metadata) {
+      setMetadata({
+        ...metadata,
+        isFavorite: newStatus,
+      });
+    }
+  };
+
   useEffect(() => {
     load();
-  }, [])
+  }, [id, type]) // Add id and type to dependency array to re-load if they change
 
   const deleteNote = async () => {
-
     const [error, message] = await removeNote(id, type)
 
     if (error) {
@@ -50,10 +57,7 @@ const Wrapper = () => {
     }
 
     toast.success(message)
-
-    // Redirect to notes page.
     window.history.back()
-
   }
 
   return (
@@ -82,11 +86,15 @@ const Wrapper = () => {
           </button>
           <Link
             title={`Edit ${metadata?.title ?? "undefined"}`}
-            href={`/editor/edit/${type}?id=${id}`}
+            href={`/editor/edit/<span class="math-inline">\{type\}?id\=</span>{id}`}
             className="w-8 h-8 transition-all border rounded-md group/edit hover:bg-green-500/5 hover:border-green-500/5 hover:scale-110 border-white/5 bg-white/5"
           >
             <IconEdit size={32} className="fill-neutral-50 p-0.5 group-hover/edit:fill-green-600 transition-colors" />
           </Link>
+          {metadata ? (
+            // Pass the handleFavoriteToggle function to ButtonAddFavorite
+            <ButtonAddFavorite note={metadata} onToggle={handleFavoriteToggle} />
+          ) : null}
         </div>
         {metadata && <span className="text-sm font-geist-mono text-neutral-400">last update: {getLocalDateString(metadata.updatedAt)}</span>}
       </footer>
