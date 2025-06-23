@@ -41,6 +41,7 @@ pub struct AccessControl {
 pub enum NoteType {
     MD,
     TXT,
+    CSV,
 }
 
 impl NoteType {
@@ -57,6 +58,7 @@ impl fmt::Display for NoteType {
         match self {
             NoteType::MD => write!(f, "md"),
             NoteType::TXT => write!(f, "txt"),
+            NoteType::CSV => write!(f, "csv"),
         }
     }
 }

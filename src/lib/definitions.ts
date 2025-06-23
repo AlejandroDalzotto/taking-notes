@@ -1,7 +1,8 @@
 
 export enum NoteExtension {
   MARKDOWN = "md",
-  PLAINTEXT = "txt"
+  PLAINTEXT = "txt",
+  CSV = "csv",
 }
 
 export type Icon = "home" | "list" | "add";
