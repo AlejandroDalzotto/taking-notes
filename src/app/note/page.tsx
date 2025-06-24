@@ -80,7 +80,7 @@ const Wrapper = () => {
         <div className="flex items-center gap-x-4">
           <button
             onClick={deleteNote}
-            className="w-8 h-8 transition-all border rounded-md border-white/5 hover:bg-red-500/5 hover:border-red-500/5 group/delete hover:scale-110 bg-white/5"
+            className="w-8 h-8 transition-all border rounded-md cursor-pointer border-white/5 hover:bg-red-500/5 hover:border-red-500/5 group/delete hover:scale-110 bg-white/5"
           >
             <IconDelete size={32} className="fill-neutral-50 p-0.5 group-hover/delete:fill-red-600 transition-colors" />
           </button>
@@ -95,6 +95,11 @@ const Wrapper = () => {
             // Pass the handleFavoriteToggle function to ButtonAddFavorite
             <ButtonAddFavorite note={metadata} onToggle={handleFavoriteToggle} />
           ) : null}
+          <button
+            className="h-8 px-2 py-1 text-sm transition-all border rounded-md cursor-pointer font-geist-mono hover:text-indigo-200 hover:bg-indigo-500/5 hover:border-indigo-500/5 hover:scale-110 border-white/5 bg-white/5"
+          >
+            protect note
+          </button>
         </div>
         {metadata && <span className="text-sm font-geist-mono text-neutral-400">last update: {getLocalDateString(metadata.updatedAt)}</span>}
       </footer>
