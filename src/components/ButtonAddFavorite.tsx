@@ -32,7 +32,7 @@ export default function ButtonAddFavorite({ note, onToggle }: { note: Note, onTo
     <button
       onClick={handler}
       disabled={isLoading}
-      className="w-8 h-8 transition-all border rounded-md disabled:opacity-40 disabled:pointer-events-none group/favorite hover:bg-rose-500/5 hover:border-rose-500/5 hover:scale-110 border-white/5 bg-white/5"
+      className="w-8 h-8 transition-all border rounded-md cursor-pointer disabled:opacity-40 disabled:pointer-events-none group/favorite hover:bg-rose-500/5 hover:border-rose-500/5 hover:scale-110 border-white/5 bg-white/5"
     >
       {/* `filled` prop directly uses the note's isFavorite status */}
       <IconHeart size={32} filled={note.isFavorite} className="fill-neutral-50 p-0.5 group-hover/favorite:fill-rose-600 transition-colors" />
