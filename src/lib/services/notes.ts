@@ -138,3 +138,14 @@ export const getTotalNotesCount = async (): Promise<number> => {
     return 0;
   }
 }
+
+export const authNote = async (id: string, password: string): Promise<boolean> => {
+  try {
+    const result = await invoke<boolean>("auth_note", { id, password });
+
+    return result;
+  } catch (e) {
+    Log.error("Error trying to get access to note", (e as Error).message);
+    return false;
+  }
+}
