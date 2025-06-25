@@ -1,6 +1,7 @@
 "use client";
 
 import ButtonAddFavorite from "@/components/ButtonAddFavorite";
+import ButtonProtectNote from "@/components/ButtonProtectNote";
 import { IconDelete, IconEdit } from "@/components/Icons";
 import MarkdownContent from "@/components/MarkdownContent";
 import { Note, NoteExtension } from "@/lib/definitions";
@@ -46,7 +47,7 @@ const Wrapper = () => {
 
   useEffect(() => {
     load();
-  }, [id, type]) // Add id and type to dependency array to re-load if they change
+  }, [id, type])
 
   const deleteNote = async () => {
     const [error, message] = await removeNote(id, type)
@@ -92,14 +93,12 @@ const Wrapper = () => {
             <IconEdit size={32} className="fill-neutral-50 p-0.5 group-hover/edit:fill-green-600 transition-colors" />
           </Link>
           {metadata ? (
-            // Pass the handleFavoriteToggle function to ButtonAddFavorite
-            <ButtonAddFavorite note={metadata} onToggle={handleFavoriteToggle} />
+            <>
+              <ButtonAddFavorite note={metadata} onToggle={handleFavoriteToggle} />
+
+              <ButtonProtectNote note={metadata} />
+            </>
           ) : null}
-          <button
-            className="h-8 px-2 py-1 text-sm transition-all border rounded-md cursor-pointer font-geist-mono hover:text-indigo-200 hover:bg-indigo-500/5 hover:border-indigo-500/5 hover:scale-110 border-white/5 bg-white/5"
-          >
-            protect note
-          </button>
         </div>
         {metadata && <span className="text-sm font-geist-mono text-neutral-400">last update: {getLocalDateString(metadata.updatedAt)}</span>}
       </footer>
