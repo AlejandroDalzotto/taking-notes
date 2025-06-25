@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 use std::fs;
 
-use crate::commands::migration::NoteType;
+use crate::commands::migration::{AccessControl, NoteType};
 use crate::migration::{DatabaseV2, NoteV2, SchemaVersion};
 use crate::{utils, AppDirs};
+use argon2::password_hash::rand_core::OsRng;
+use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordHasher};
 use tauri::State;
 use uuid::Uuid;
 
@@ -233,7 +236,47 @@ pub async fn toggle_favorite(
             item.is_favorite = !current;
         }
 
-        // Write updated entries list without the removed one (notes-manager)
+        utils::atomic_write(
+            manager_path,
+            serde_json::to_string(&manager).unwrap().as_str(),
+        )
+        .unwrap();
+
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+pub async fn save_password(
+    id: String,
+    password: String,
+    app_state: State<'_, AppDirs>,
+) -> Result<bool, ()> {
+    let manager_path = app_state.manager_path.as_str();
+
+    if fs::exists(manager_path).unwrap() {
+        // Read previous entries (if file exists)
+        let raw_json = fs::read_to_string(manager_path).unwrap();
+        let mut manager = serde_json::from_str::<DatabaseV2>(&raw_json).unwrap();
+
+        if let Some(item) = manager.notes.get_mut(&id) {
+            // Generate a random salt
+            let salt = SaltString::generate(&mut OsRng);
+
+            // Create an Argon2 instance with default parameters
+            // You might want to adjust the parameters (memory, time, threads)
+            // based on your security requirements and performance considerations.
+            let argon2 = Argon2::default();
+            // Hash the password
+            let password_hashed = Argon2::hash_password(&argon2, password.as_bytes(), &salt).unwrap();
+
+            item.access_control = Some(AccessControl { password: password_hashed.to_string() });
+
+            drop(password_hashed);
+        }
+
         utils::atomic_write(
             manager_path,
             serde_json::to_string(&manager).unwrap().as_str(),

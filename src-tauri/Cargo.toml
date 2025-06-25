@@ -28,6 +28,7 @@ chrono = "0.4.41"
 tauri-plugin-process = "2"
 tauri-plugin-clipboard-manager = "2"
 tempfile = "3.20.0"
+argon2 = { version = "0.5.3", features = ["std"] }
 
 [dependencies.uuid]
 version = "1.17.0"
