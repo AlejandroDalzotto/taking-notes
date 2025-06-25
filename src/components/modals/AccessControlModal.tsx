@@ -2,15 +2,18 @@
 
 import { useModal } from "@/context/modal-provider";
 import { verifyPassword } from "@/lib/services/notes";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
 
 interface AccessControlModalProps {
   noteId: string;
+  url: string
 }
 
-export default function AccessControlModal({ noteId }: AccessControlModalProps) {
+export default function AccessControlModal({ noteId, url }: AccessControlModalProps) {
   const { close } = useModal();
+  const router = useRouter()
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,7 +30,8 @@ export default function AccessControlModal({ noteId }: AccessControlModalProps) 
       const isCorrect = await verifyPassword(noteId, password);
 
       if (isCorrect) {
-        toast.success("Note unlocked!");
+        toast.success("Access conceived!");
+        router.push(url);
       } else {
         toast.error("Incorrect password.");
       }
