@@ -149,3 +149,14 @@ export const authNote = async (id: string, password: string): Promise<boolean> =
     return false;
   }
 }
+
+export const savePassword = async (id: string, password: string): Promise<boolean> => {
+  try {
+    const result = await invoke<boolean>("save_password", { id, password });
+
+    return result;
+  } catch (e) {
+    Log.error("Error trying to save password for note", (e as Error).message);
+    return false;
+  }
+} 
