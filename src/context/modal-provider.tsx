@@ -1,5 +1,5 @@
 "use client";
-import ModalPlaceholder from "@/components/ModalPlaceholder";
+import { AnimatePresence, motion } from "motion/react";
 import { createContext, useContext, useState } from "react";
 
 type ModalContextType = {
@@ -15,25 +15,39 @@ export const ModalContext = createContext<ModalContextType>({
 // Provider component can be implemented later to manage modal state
 export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   const [modalContent, setModalContent] = useState<React.ReactNode>(null);
-  const [modalVisible, setModalVisible] = useState(false);
 
   const open = (content: React.ReactNode) => {
     setModalContent(content);
-    setModalVisible(true);
   };
 
   const close = () => {
-    setModalVisible(false);
     setModalContent(null);
   };
 
+  const isOpen = Boolean(modalContent)
+
   return (
     <ModalContext.Provider value={{ open, close }}>
-      {modalVisible && modalContent && (
-        <ModalPlaceholder>
-          {modalContent}
-        </ModalPlaceholder>
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+            onClick={close}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()} // Prevent modal content from closing modal
+            >
+              {modalContent}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {children}
     </ModalContext.Provider>
   );
