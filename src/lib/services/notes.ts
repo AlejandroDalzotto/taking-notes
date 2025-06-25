@@ -139,9 +139,9 @@ export const getTotalNotesCount = async (): Promise<number> => {
   }
 }
 
-export const authNote = async (id: string, password: string): Promise<boolean> => {
+export const verifyPassword = async (id: string, password: string): Promise<boolean> => {
   try {
-    const result = await invoke<boolean>("auth_note", { id, password });
+    const result = await invoke<boolean>("verify_password", { id, password });
 
     return result;
   } catch (e) {
