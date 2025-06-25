@@ -57,6 +57,7 @@ pub fn run() {
             notes::get_total_notes_count,
             notes::toggle_favorite,
             notes::save_password,
+            notes::verify_password,
             migration::check_for_migration,
             migration::migrate_v1_to_v2,
         ])

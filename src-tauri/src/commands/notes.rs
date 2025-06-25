@@ -6,7 +6,7 @@ use crate::migration::{DatabaseV2, NoteV2, SchemaVersion};
 use crate::{utils, AppDirs};
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
-use argon2::{Argon2, PasswordHasher};
+use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use tauri::State;
 use uuid::Uuid;
 
@@ -270,9 +270,12 @@ pub async fn save_password(
             // based on your security requirements and performance considerations.
             let argon2 = Argon2::default();
             // Hash the password
-            let password_hashed = Argon2::hash_password(&argon2, password.as_bytes(), &salt).unwrap();
+            let password_hashed =
+                Argon2::hash_password(&argon2, password.as_bytes(), &salt).unwrap();
 
-            item.access_control = Some(AccessControl { password: password_hashed.to_string() });
+            item.access_control = Some(AccessControl {
+                password: password_hashed.to_string(),
+            });
 
             drop(password_hashed);
         }
@@ -284,6 +287,44 @@ pub async fn save_password(
         .unwrap();
 
         Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+pub async fn verify_password(
+    id: String,
+    password: String,
+    app_state: State<'_, AppDirs>,
+) -> Result<bool, ()> {
+    let manager_path = app_state.manager_path.as_str();
+
+    if fs::exists(manager_path).unwrap() {
+        // Read previous entries (if file exists)
+        let raw_json = fs::read_to_string(manager_path).unwrap();
+        let manager = serde_json::from_str::<DatabaseV2>(&raw_json).unwrap();
+
+        if let Some(item) = manager.notes.get(&id) {
+            if let Some(note_access_control) = &item.access_control {
+                let note_password = &note_access_control.password;
+
+                // Parse the stored hash
+                let parsed_hash = argon2::password_hash::PasswordHash::new(note_password).unwrap();
+
+                // Create an Argon2 instance (parameters must match those used for hashing if not default)
+                let argon2 = Argon2::default();
+
+                // Verify the password
+                return Ok(argon2
+                    .verify_password(password.as_bytes(), &parsed_hash)
+                    .is_ok());
+            }
+
+            return Ok(false)
+        }
+
+        Ok(false)
     } else {
         Ok(false)
     }
