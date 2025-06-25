@@ -96,7 +96,9 @@ const Wrapper = () => {
             <>
               <ButtonAddFavorite note={metadata} onToggle={handleFavoriteToggle} />
 
-              <ButtonProtectNote note={metadata} />
+              {!metadata.accessControl ? (
+                <ButtonProtectNote note={metadata} />
+              ) : null}
             </>
           ) : null}
         </div>
