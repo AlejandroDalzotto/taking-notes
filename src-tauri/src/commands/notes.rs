@@ -3,6 +3,7 @@ use std::fs;
 
 use crate::commands::migration::{AccessControl, NoteType};
 use crate::migration::{DatabaseV2, NoteV2, SchemaVersion};
+use crate::utils::{decrypt_spanish_caesar, encrypt_spanish_caesar};
 use crate::{utils, AppDirs};
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
@@ -53,9 +54,15 @@ pub async fn get_note(
         }
     };
 
-    let content = fs::read_to_string(file_path).unwrap();
-
     let note = manager.notes.get(&id).unwrap().clone();
+
+    let content = fs::read_to_string(file_path).unwrap();
+    if note.access_control.is_some() {
+        let decrypted_content = decrypt_spanish_caesar(&content);
+
+        return Ok((decrypted_content, note));
+    }
+
     Ok((content, note))
 }
 
@@ -278,6 +285,20 @@ pub async fn save_password(
             });
 
             drop(password_hashed);
+
+            let file_path = app_state
+                .app_data_path
+                .join(format!("{}.{}", &item.id, &item.r#type));
+
+            let file_content = fs::read_to_string(&file_path).unwrap();
+
+            let new_encrypted_content = encrypt_spanish_caesar(&file_content);
+
+            utils::atomic_write(
+                file_path,
+                &new_encrypted_content
+            )
+            .unwrap();
         }
 
         utils::atomic_write(
@@ -321,7 +342,7 @@ pub async fn verify_password(
                     .is_ok());
             }
 
-            return Ok(false)
+            return Ok(false);
         }
 
         Ok(false)
