@@ -1,11 +1,10 @@
+import { JSX } from "react";
 
 export enum NoteExtension {
   MARKDOWN = "md",
   PLAINTEXT = "txt",
   CSV = "csv",
 }
-
-export type Icon = "home" | "list" | "add";
 
 export type AccessControl = {
 
@@ -30,5 +29,5 @@ export interface NavLink {
   id: string;
   label: string;
   href: string;
-  icon: Icon;
+  icon: JSX.Element;
 }
