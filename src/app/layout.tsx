@@ -9,15 +9,30 @@ import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+const newKansas = localFont({
+  src: [
+    {
+      path: './fonts/New-Kansas.otf',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: './fonts/New-Kansas-Bold.otf',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      path: './fonts/New-Kansas-Light.otf',
+      weight: '300',
+      style: 'normal',
+    },
+    {
+      path: './fonts/New-Kansas-Medium.otf',
+      weight: '500',
+      style: 'normal',
+    },
+  ],
+  variable: "--font-new-kansas",
 });
 
 export const metadata: Metadata = {
@@ -33,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex font-geist-sans w-screen relative p-4 h-screen text-neutral-50 bg-neutral-950`}
+        className={`${newKansas.variable} antialiased flex font-new-kansas w-screen relative p-4 h-screen text-neutral-50 bg-neutral-950`}
       >
         <Grainy />
         <UpdaterProvider>

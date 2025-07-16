@@ -30,7 +30,7 @@ export default function CreateNotePage() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-10 grow place-content-center">
-      <h2 className="text-3xl font-light text-center text-neutral-300 font-geist-mono">What do you want to create today?</h2>
+      <h2 className="text-3xl font-light text-center text-neutral-300 ">What do you want to create today?</h2>
       <div className="flex flex-wrap gap-10">
         {
           options.map(option => {
@@ -41,7 +41,7 @@ export default function CreateNotePage() {
                 href={option.url}
                 title={`Create a ${option.label.toLowerCase()}`}
                 className={clsx(
-                  "relative transition-colors group flex flex-col items-center justify-end w-56 p-4 border-2 rounded-lg font-geist-mono text-neutral-600 border-neutral-600 aspect-square",
+                  "relative transition-colors group flex flex-col items-center justify-end w-56 p-4 border-2 rounded-lg  text-neutral-600 border-neutral-600 aspect-square",
                   { "hover:border-neutral-300 hover:bg-neutral-300/10": option.symbol === NoteExtension.PLAINTEXT },
                   { "hover:border-blue-500 hover:bg-blue-500/10": option.symbol === NoteExtension.MARKDOWN },
                 )}
@@ -66,7 +66,7 @@ export default function CreateNotePage() {
       {draft.note.content || draft.note.title ? (
         <Link
           href={draft.id ? `/editor/edit/${draft.note.type}?id=${draft.id}` : `/editor/create/${draft.note.type}`}
-          className="px-4 py-2 text-lg text-center transition-colors border-2 rounded-md w-max border-neutral-600 text-neutral-600 hover:border-neutral-300 hover:text-neutral-300 font-geist-mono"
+          className="px-4 py-2 text-lg text-center transition-colors border-2 rounded-md w-max border-neutral-600 text-neutral-600 hover:border-neutral-300 hover:text-neutral-300 "
         >
           You have an unsaved draft. <br /> Would you like to continue editing it?
         </Link>

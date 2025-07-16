@@ -36,7 +36,7 @@ export default function UpdaterProvider({
         if (update.version != update.currentVersion) {
           toast.loading(
             <div className="flex flex-col w-fit">
-              {update && (<h1 className="text-lg font-geist-mono">{update.body ?? `New version ${update.version} available`}</h1>)}
+              {update && (<h1 className="text-lg ">{update.body ?? `New version ${update.version} available`}</h1>)}
               <p className="whitespace-nowrap">The application will automatically restart to complete the update.</p>
             </div>
           );

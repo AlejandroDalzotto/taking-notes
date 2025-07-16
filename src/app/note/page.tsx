@@ -64,7 +64,7 @@ const Wrapper = () => {
   return (
     <div className="flex flex-col w-full h-full p-1 gap-y-2">
       <header className="w-full">
-        <h1 className="text-lg font-bold font-geist-mono text-rose-400">
+        <h1 className="text-lg font-bold  text-rose-400">
           {metadata ? metadata.title : "undefined (Not found)"}
         </h1>
       </header>
@@ -102,7 +102,7 @@ const Wrapper = () => {
             </>
           ) : null}
         </div>
-        {metadata && <span className="text-sm font-geist-mono text-neutral-400">last update: {getLocalDateString(metadata.updatedAt)}</span>}
+        {metadata && <span className="text-sm  text-neutral-400">last update: {getLocalDateString(metadata.updatedAt)}</span>}
       </footer>
     </div>
   )

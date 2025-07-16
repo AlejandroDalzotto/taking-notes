@@ -33,8 +33,8 @@ export default function NoteLink({ note }: { note: Note }) {
     >
       <div className="relative flex items-center justify-between">
         <div className="flex items-center gap-x-5 grow max-w-[80%]">
-          <p className="capitalize text-sm max-w-[55%] truncate font-geist-mono">{note.title}</p>
-          <span className={clsx("text-xs border p-0.5 rounded-sm font-geist-mono",
+          <p className="capitalize text-sm max-w-[55%] truncate ">{note.title}</p>
+          <span className={clsx("text-xs border p-0.5 rounded-sm ",
             { "border-indigo-500 text-indigo-500 bg-indigo-500/5": note.type === NoteExtension.MARKDOWN },
             { "border-neutral-500 text-neutral-500 bg-neutral-500/5": note.type === NoteExtension.PLAINTEXT },
           )}>.{note.type}</span>
@@ -49,7 +49,7 @@ export default function NoteLink({ note }: { note: Note }) {
             note.tags.map(tag => {
 
               return (
-                <div className="text-xs font-mono p-0.5 rounded-sm border border-neutral-500" key={tag}>
+                <div className="text-xs  p-0.5 rounded-sm border border-neutral-500" key={tag}>
                   {tag}
                 </div>
               )

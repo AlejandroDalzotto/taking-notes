@@ -55,7 +55,7 @@ export default function Navbar() {
           alt="app_icon"
           src="/icon.png"
         />
-        <p className="text-lg font-geist-mono">Taking Notes</p>
+        <p className="text-lg ">Taking Notes</p>
       </div>
 
       <ul className="flex flex-col grow gap-y-4">
@@ -84,7 +84,7 @@ export default function Navbar() {
 
       <Link
         target="_blank"
-        className="text-sm font-light transition-colors font-geist-mono hover:text-blue-500"
+        className="text-sm font-light transition-colors  hover:text-blue-500"
         href="https://github.com/AlejandroDalzotto"
       >
         Made by Alejandro

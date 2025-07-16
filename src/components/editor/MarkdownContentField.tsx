@@ -66,13 +66,13 @@ export default function MarkdownContentField() {
           type: NoteExtension.MARKDOWN
         })}
         spellCheck={false}
-        className="absolute inset-0 z-10 p-4 overflow-y-auto font-mono text-lg text-transparent bg-transparent outline-none resize-none caret-blue-50 placeholder:text-white/50 peer/input"
+        className="absolute inset-0 z-10 p-4 overflow-y-auto  text-lg text-transparent bg-transparent outline-none resize-none caret-blue-50 placeholder:text-white/50 peer/input"
         placeholder="Write something here..."
         ref={textareaRef}
         onScroll={handleTextareaScroll}
       />
       <div
-        className="absolute inset-0 p-4 overflow-y-auto font-mono text-lg peer-hover/input:bg-white/[0.01] peer-focus/input:bg-white/5 whitespace-pre-wrap transition-colors bg-transparent rounded"
+        className="absolute inset-0 p-4 overflow-y-auto  text-lg peer-hover/input:bg-white/[0.01] peer-focus/input:bg-white/5 whitespace-pre-wrap transition-colors bg-transparent rounded"
         dangerouslySetInnerHTML={{
           __html:
             remarkMarkdown(draft.note.content) +

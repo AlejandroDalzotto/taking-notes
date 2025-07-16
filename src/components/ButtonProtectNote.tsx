@@ -16,7 +16,7 @@ export default function ButtonProtectNote({ note }: { note: Note }) {
   return (
     <button
       onClick={handler}
-      className="flex items-center h-8 px-2 py-1 text-sm transition-all border rounded-md cursor-pointer font-geist-mono hover:text-indigo-200 hover:bg-indigo-500/5 hover:border-indigo-500/5 hover:scale-110 border-white/5 bg-white/5 gap-x-1"
+      className="flex items-center h-8 px-2 py-1 text-sm transition-all border rounded-md cursor-pointer  hover:text-indigo-200 hover:bg-indigo-500/5 hover:border-indigo-500/5 hover:scale-110 border-white/5 bg-white/5 gap-x-1"
     >
       Protect Note
     </button>

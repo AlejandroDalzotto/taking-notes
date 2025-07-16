@@ -41,7 +41,7 @@ export default function EditorForm({ contentField, buttons, type }: Props) {
         autoComplete="off"
         name="title"
         placeholder="Title..."
-        className="w-full p-4 text-xl font-mono transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/[0.01] focus:bg-white/5"
+        className="w-full p-4 text-xl  transition-colors bg-transparent outline-none placeholder:text-neutral-400 hover:bg-white/[0.01] focus:bg-white/5"
       />
       {contentField}
       <div className="flex items-center justify-between w-full">

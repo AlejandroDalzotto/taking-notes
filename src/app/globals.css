@@ -2,12 +2,11 @@
 @plugin '@tailwindcss/typography';
 
 @theme {
-  --font-geist-sans: var(--font-geist-sans);
-  --font-geist-mono: var(--font-geist-mono);
+  --font-new-kansas: var(--font-new-kansas);
 }
 
 *: {
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-new-kansas);
 }
 
 :root {
@@ -36,7 +35,6 @@
 /* Markdown preview dark mode styles */
 .md-block-code {
   color: #b5e853;
-  font-family: 'Fira Mono', 'Consolas', monospace;
 }
 
 .md-html-tag {
@@ -44,7 +42,7 @@
 }
 
 .md-bold {
-  @apply text-rose-500 font-bold
+  @apply text-rose-500
 }
 
 .md-italic {
@@ -58,7 +56,6 @@
 
 .md-heading {
   color: #7ec3fa;
-  font-weight: bold;
 }
 
 .md-list {
@@ -81,7 +78,6 @@
 
 .md-table {
   color: #e1e1e6;
-  font-family: 'Fira Mono', 'Consolas', monospace;
 }
 
 .md-hr {

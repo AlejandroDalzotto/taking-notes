@@ -4,7 +4,7 @@ import { useModal } from "@/context/modal-provider";
 
 const Text = () => {
   return (
-    <div className="flex flex-col text-center items-center justify-center gap-2 font-mono text-white/20 text-base lg:text-2xl pointer-events-none">
+    <div className="flex flex-col text-center items-center justify-center gap-2  text-white/20 text-base lg:text-2xl pointer-events-none">
       <span>click anywhere</span>
       <span>to close</span>
     </div>
