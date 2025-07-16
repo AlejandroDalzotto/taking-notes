@@ -5,35 +5,16 @@ import MigrationProvider from "@/context/migration-provider";
 import { ModalProvider } from "@/context/modal-provider";
 import UpdaterProvider from "@/context/update-provider";
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Exo_2 } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const newKansas = localFont({
-  src: [
-    {
-      path: './fonts/New-Kansas.otf',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: './fonts/New-Kansas-Bold.otf',
-      weight: '700',
-      style: 'normal',
-    },
-    {
-      path: './fonts/New-Kansas-Light.otf',
-      weight: '300',
-      style: 'normal',
-    },
-    {
-      path: './fonts/New-Kansas-Medium.otf',
-      weight: '500',
-      style: 'normal',
-    },
-  ],
-  variable: "--font-new-kansas",
-});
+const exo2 = Exo_2({
+  variable: '--font-exo-2',
+  style: 'normal',
+  weight: 'variable',
+  subsets: ['latin']
+})
 
 export const metadata: Metadata = {
   title: "Taking Notes",
@@ -48,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${newKansas.variable} antialiased flex font-new-kansas w-screen relative p-4 h-screen text-neutral-50 bg-neutral-950`}
+        className={`${exo2.variable} antialiased flex flex-col font-exo-2 w-screen relative p-4 h-screen text-neutral-50 bg-neutral-950`}
       >
         <Grainy />
         <UpdaterProvider>

@@ -18,7 +18,7 @@ export default function PlainContentField() {
       name="content"
       spellCheck={false}
       placeholder="Write about something..."
-      className="p-4 overflow-y-auto  text-lg transition-colors bg-transparent outline-none resize-none grow text-start placeholder:text-neutral-400 hover:bg-white/5"
+      className="p-4 overflow-y-auto text-3xl transition-colors bg-transparent outline-none resize-none grow text-start placeholder:text-neutral-400 hover:bg-white/5"
     />
   )
 }

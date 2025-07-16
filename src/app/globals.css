@@ -2,11 +2,11 @@
 @plugin '@tailwindcss/typography';
 
 @theme {
-  --font-new-kansas: var(--font-new-kansas);
+  --font-exo-2: var(--font-exo-2);
 }
 
 *: {
-  font-family: var(--font-new-kansas);
+  font-family: var(--font-exo-2);
 }
 
 :root {
