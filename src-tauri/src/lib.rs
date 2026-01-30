@@ -1,72 +1,56 @@
 mod commands;
 mod utils;
 
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
 
-use commands::{notes, migration};
+use commands::{files, migration};
 use tauri::Manager;
 
 static MANAGER_METADATA_FILE: &str = "notes-manager.json";
 
-pub struct AppDirs {
-    pub manager_path: Arc<String>,
-    pub app_data_path: Arc<PathBuf>,
+pub struct AppState {
+    pub manager_path: PathBuf,
+    pub app_data_path: PathBuf,
 }
 
 /// Helper to get app data and manager file paths.
-fn get_app_dirs(app: &tauri::App) -> AppDirs {
+fn initialize_state(app: &tauri::AppHandle) -> AppState {
     let data_dir = app
         .path()
         .app_local_data_dir()
         .expect("Failed to get app local data directory");
 
-    let manager_path = data_dir
-        .join(MANAGER_METADATA_FILE)
-        .to_str()
-        .expect("Failed to convert manager path to string")
-        .to_string();
+    let manager_path = data_dir.join(MANAGER_METADATA_FILE);
 
-    AppDirs {
-        manager_path: Arc::new(manager_path),
-        app_data_path: Arc::new(data_dir),
+    AppState {
+        manager_path: manager_path,
+        app_data_path: data_dir,
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(
-            tauri_plugin_log::Builder::new()
-                .target(tauri_plugin_log::Target::new(
-                    tauri_plugin_log::TargetKind::LogDir {
-                        file_name: Some(String::from("app-logs")),
-                    },
-                ))
-                .build(),
-        )
-        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
+        .plugin(tauri_plugin_window_state::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![
-            notes::get_all_notes_metadata,
-            notes::get_note,
-            notes::create_note,
-            notes::search_notes_by_term,
-            notes::edit_note,
-            notes::remove_note,
-            notes::get_total_notes_count,
-            notes::toggle_favorite,
-            notes::save_password,
-            notes::verify_password,
-            migration::check_for_migration,
-            migration::migrate_v1_to_v2,
-        ])
         .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![
+            files::save_file,
+            files::open_file,
+            migration::check_for_migration_to_v2,
+            migration::migrate_v1_to_v2,
+            migration::get_schema_version,
+            migration::save_editor_state,
+            migration::load_editor_state,
+        ])
         .setup(|app| {
+            let app_handle = app.handle();
 
-            // Manage app directories and paths
-            let app_dirs = get_app_dirs(app);
-            app.manage(app_dirs);
+            let app_state = initialize_state(&app_handle);
+            app.manage(app_state);
 
             Ok(())
         })

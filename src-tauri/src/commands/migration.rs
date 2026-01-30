@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tauri::{command, State};
 
 use crate::utils;
-use crate::AppDirs;
-use std::{fmt, fs};
+use crate::utils::sanitize_filename;
+use crate::utils::validate_local_files;
+use crate::AppState;
+use std::fs;
 
-// La primera versión de la nota
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct NoteV1 {
@@ -19,113 +21,92 @@ pub struct NoteV1 {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct NoteV2 {
-    pub id: String,
-    pub title: String,
-    pub created_at: u64,
-    pub updated_at: u64,
-    pub access_control: Option<AccessControl>, // <- opcional
-    pub is_favorite: bool,
-    pub tags: Vec<String>,
-    pub r#type: NoteType,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct AccessControl {
-    pub password: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum NoteType {
-    MD,
-    TXT,
-    CSV,
-}
-
-impl NoteType {
-    fn from_file_extension(file_extension: &str) -> Self {
-        match file_extension {
-            "md" => NoteType::MD,
-            _ => NoteType::TXT,
-        }
-    }
-}
-
-impl fmt::Display for NoteType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            NoteType::MD => write!(f, "md"),
-            NoteType::TXT => write!(f, "txt"),
-            NoteType::CSV => write!(f, "csv"),
-        }
-    }
-}
-
-/// La estructura que contiene toutes las notas en V2 junto a la versión de esquema
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct DatabaseV2 {
-    pub notes: HashMap<String, NoteV2>,
-    pub schema_version: SchemaVersion,
-}
-
-/// La versión del esquema
-#[derive(Serialize, Deserialize, Debug)]
 pub enum SchemaVersion {
+    V1,
     V2,
 }
 
-impl DatabaseV2 {
-    pub fn migrate_from_v1(v1_notes: Vec<NoteV1>) -> Self {
-        let notes = v1_notes
-            .into_iter()
-            .map(|note_v1| {
-                let id = note_v1.tag;
+// V2 schemas
 
-                let note_v2 = NoteV2 {
-                    id: id.clone(),
-                    title: note_v1.title,
-                    created_at: note_v1.created_at,
-                    updated_at: note_v1.updated_at,
-                    access_control: None,
-                    is_favorite: false,
-                    tags: Vec::new(),
-                    r#type: NoteType::from_file_extension(&note_v1.file_extension),
-                };
-                (id, note_v2)
-            })
-            .collect();
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionTab {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>, // None for untitled tabs
+    pub filename: String,
+    pub is_dirty: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>, // Only stored for untitled tabs (path == None)
+}
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct EditorSession {
+    pub tabs: Vec<SessionTab>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub current_tab_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LocalFile {
+    pub id: String,
+    pub filename: String,
+    pub modified: u64, // unix timestamp in milliseconds
+    pub path: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DatabaseV2 {
+    pub recent_files: HashMap<String, LocalFile>, // path -> file info
+    pub session: EditorSession,
+    pub schema_version: SchemaVersion,
+}
+
+impl Default for DatabaseV2 {
+    fn default() -> Self {
         DatabaseV2 {
-            notes,
+            recent_files: HashMap::new(),
+            session: EditorSession::default(),
             schema_version: SchemaVersion::V2,
         }
     }
 }
 
 #[command]
-pub fn check_for_migration(app_state: State<'_, AppDirs>) -> Result<bool, ()> {
-    let manager_path = app_state.manager_path.as_str();
+pub fn get_schema_version(app_state: State<'_, AppState>) -> Result<SchemaVersion, ()> {
+    let manager_path = app_state.manager_path.as_path();
 
-    if fs::exists(manager_path).unwrap() {
-        // Cargar el esquema crudo
-        let raw_manager_data = std::fs::read_to_string(manager_path).unwrap();
+    if fs::metadata(manager_path).is_ok() {
+        let raw_manager_data = std::fs::read_to_string(manager_path).map_err(|_| ())?;
+        if let Ok(manager) = serde_json::from_str::<Value>(&raw_manager_data) {
+            if let Some(version) = manager.get("schemaVersion") {
+                if let Some(version_str) = version.as_str() {
+                    return match version_str {
+                        "V2" => Ok(SchemaVersion::V2),
+                        "V1" => Ok(SchemaVersion::V1),
+                        _ => Ok(SchemaVersion::V1),
+                    };
+                }
+            }
+            return Ok(SchemaVersion::V1);
+        }
+        Ok(SchemaVersion::V1)
+    } else {
+        Ok(SchemaVersion::V1)
+    }
+}
 
-        // Intentamos parsesr como V2
+#[command]
+pub fn check_for_migration_to_v2(app_state: State<'_, AppState>) -> Result<bool, ()> {
+    let manager_path = app_state.manager_path.as_path();
+    if fs::metadata(manager_path).is_ok() {
+        let raw_manager_data = std::fs::read_to_string(manager_path).map_err(|_| ())?;
         let parsed_v2 = serde_json::from_str::<DatabaseV2>(&raw_manager_data);
-
         match parsed_v2 {
-            Ok(_) => {
-                // Si parsed_v2 fue OK, significa que NO necesita migrar
-                Ok(false)
-            }
-            Err(_) => {
-                // Si parsed_v2 falla, eso significa que el esquema es V1
-                // o que el esquema tiene un problema
-                Ok(true)
-            }
+            Ok(_) => Ok(false),
+            Err(_) => Ok(true),
         }
     } else {
         Ok(false)
@@ -133,19 +114,104 @@ pub fn check_for_migration(app_state: State<'_, AppDirs>) -> Result<bool, ()> {
 }
 
 #[command]
-pub fn migrate_v1_to_v2(app_state: State<'_, AppDirs>) -> Result<(), String> {
-    let manager_path = app_state.manager_path.to_string();
-    // load the v1 schema
-    let data_v1 = std::fs::read_to_string(&manager_path).expect("Error reading file manager");
-    let notes_v1: Vec<NoteV1> =
-        serde_json::from_str(&data_v1).expect("Error trying to parse json data");
+pub fn migrate_v1_to_v2(app_state: State<'_, AppState>) -> Result<bool, String> {
+    let manager_path = app_state.manager_path.as_path();
+    let data_dir = app_state.app_data_path.as_path();
+    let data_v1 = std::fs::read_to_string(manager_path)
+        .map_err(|e| format!("Error reading file manager: {}", e))?;
+    let notes_v1: Vec<NoteV1> = serde_json::from_str(&data_v1)
+        .map_err(|e| format!("Error trying to parse json data: {}", e))?;
 
-    // migrate to v2
-    let db_v2 = DatabaseV2::migrate_from_v1(notes_v1);
+    let mut recent_files: HashMap<String, LocalFile> = HashMap::new();
 
-    // save the new schema
-    let serialized = serde_json::to_string(&db_v2).expect("Error trying to parse data to string");
-    utils::atomic_write(manager_path, &serialized).expect("Error trying to save json data");
+    for note in notes_v1.into_iter() {
+        let src = data_dir.join(format!("{}.{}", note.tag, note.file_extension));
+        if src.exists() {
+            let title_sanitized = sanitize_filename(&note.title);
+            let filename = format!("{}.{}", title_sanitized, note.file_extension);
+            let dest = data_dir.join(&filename);
+
+            fs::rename(&src, &dest)
+                .map_err(|e| format!("Failed to move file {:?} -> {:?}: {}", src, dest, e))?;
+
+            let mut modified: u64 = 0;
+            let metadata = fs::metadata(&dest).unwrap();
+            if let Ok(time) = metadata.modified() {
+                if let Ok(duration) = time.duration_since(std::time::UNIX_EPOCH) {
+                    modified = duration.as_millis() as u64;
+                }
+            }
+            recent_files.insert(
+                dest.to_string_lossy().to_string(),
+                LocalFile {
+                    id: note.tag,
+                    filename,
+                    path: dest.to_string_lossy().to_string(),
+                    modified,
+                },
+            );
+        }
+    }
+
+    let db_v2 = DatabaseV2 {
+        recent_files,
+        session: EditorSession::default(),
+        schema_version: SchemaVersion::V2,
+    };
+
+    let serialized = serde_json::to_string(&db_v2)
+        .map_err(|e| format!("Error trying to serialize v2 data: {}", e))?;
+    utils::atomic_write(manager_path, &serialized)
+        .map_err(|e| format!("Error trying to save json data: {}", e))?;
+    Ok(true)
+}
+
+#[command]
+pub fn load_editor_state(app_state: State<'_, AppState>) -> Result<DatabaseV2, String> {
+    let manager_path = app_state.manager_path.as_path();
+
+    let db = if !fs::metadata(manager_path).is_ok() {
+        DatabaseV2::default()
+    } else {
+        let raw = std::fs::read_to_string(manager_path)
+            .map_err(|e| format!("Failed reading manager file: {}", e))?;
+
+        match serde_json::from_str::<DatabaseV2>(&raw) {
+            Ok(mut db) => {
+                validate_local_files(&mut db);
+                db
+            }
+            Err(_) => DatabaseV2::default(),
+        }
+    };
+
+    #[cfg(dev)]
+    {
+        println!("==========Successfully loaded editor state==========");
+        println!("Recent files count: {}", db.recent_files.len());
+        println!("Tabs count: {}", db.session.tabs.len());
+        println!("Schema version: {:?}", db.schema_version);
+        println!("\n");
+    }
+
+    Ok(db)
+}
+
+#[command]
+pub fn save_editor_state(app_state: State<'_, AppState>, state: DatabaseV2) -> Result<(), String> {
+    let manager_path = app_state.manager_path.as_path();
+
+    let serialized = serde_json::to_string(&state).map_err(|e| e.to_string())?;
+    utils::atomic_write(manager_path, &serialized).map_err(|e| e.to_string())?;
+
+    #[cfg(dev)]
+    {
+        println!("==========Successfully saved editor state==========");
+        println!("Recent files count: {}", state.recent_files.len());
+        println!("Tabs count: {}", state.session.tabs.len());
+        println!("Schema version: {:?}", state.schema_version);
+        println!("\n");
+    }
 
     Ok(())
 }
