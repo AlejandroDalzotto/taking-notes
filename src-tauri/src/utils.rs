@@ -1,9 +1,12 @@
-use std::io::{Write, Result};
+use std::fs;
+use std::io::Write;
 use std::path::Path;
 use tempfile::NamedTempFile;
 
+use crate::commands::migration::DatabaseV2;
+
 /// Safely writes to a file, replacing its contents without risk of corruption.
-pub fn atomic_write<P: AsRef<Path>>(path: P, content: &str) -> Result<()> {
+pub fn atomic_write<P: AsRef<Path>>(path: P, content: &str) -> Result<(), std::io::Error> {
     let mut temp = NamedTempFile::new_in(path.as_ref().parent().unwrap())?;
 
     write!(temp, "{}", content)?;
@@ -12,137 +15,55 @@ pub fn atomic_write<P: AsRef<Path>>(path: P, content: &str) -> Result<()> {
     Ok(())
 }
 
-/// Encrypts a given string using a Caesar cipher with a shift of 23 positions.
-/// It uses the Spanish alphabet (a-z, including ñ) and preserves case.
-/// Characters not found in the Spanish alphabet (e.g., spaces, numbers, punctuation)
-/// are left unchanged.
-///
-/// # Arguments
-///
-/// * `text` - A string slice (`&str`) to be encrypted.
-///
-/// # Returns
-///
-/// A `String` containing the encrypted text.
-///
-/// # Example
-///
-/// ```
-/// let original_text = "Hola Mundo, esto es una prueba con la letra Ñ.";
-/// let encrypted_text = encrypt_spanish_caesar(original_text);
-/// // Expected output: "Ejkx Jqfmk, bqrv bq rfx oqrbx zkf hx kxbqx L." (approximate, verify with exact shift)
-/// println!("{}", encrypted_text);
-/// ```
-pub fn encrypt_spanish_caesar(text: &str) -> String {
-    // Define the Spanish alphabet including 'ñ'
-    const ALPHABET: &str = "abcdefghijklmnñopqrstuvwxyz";
-    let alphabet_chars: Vec<char> = ALPHABET.chars().collect();
-    let alphabet_len = alphabet_chars.len(); // Should be 27 (26 letters + ñ)
-    let shift = 23; // The desired shift value
-
-    // Initialize a new string to store the encrypted result
-    let mut encrypted_text = String::new();
-
-    // Iterate over each character in the input text
-    for char_to_encrypt in text.chars() {
-        let mut found_and_encrypted = false;
-
-        // Check for lowercase characters
-        if char_to_encrypt.is_lowercase() {
-            if let Some(index) = alphabet_chars.iter().position(|&c| c == char_to_encrypt) {
-                // Calculate the new index, ensuring it wraps around the alphabet
-                let new_index = (index + shift) % alphabet_len;
-                encrypted_text.push(alphabet_chars[new_index]);
-                found_and_encrypted = true;
-            }
-        }
-        // Check for uppercase characters
-        else if char_to_encrypt.is_uppercase() {
-            // Convert to lowercase to find its position in the alphabet
-            let lower_char = char_to_encrypt.to_ascii_lowercase();
-            if let Some(index) = alphabet_chars.iter().position(|&c| c == lower_char) {
-                // Calculate the new index
-                let new_index = (index + shift) % alphabet_len;
-                // Convert the new character back to uppercase before pushing
-                encrypted_text.push(alphabet_chars[new_index].to_ascii_uppercase());
-                found_and_encrypted = true;
-            }
-        }
-
-        // If the character was not a Spanish alphabet letter (e.g., space, punctuation, number),
-        // append it unchanged.
-        if !found_and_encrypted {
-            encrypted_text.push(char_to_encrypt);
-        }
+pub fn sanitize_filename(input: &str) -> String {
+    let forbidden = ['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
+    let mut s: String = input
+        .chars()
+        .map(|c| if forbidden.contains(&c) { '_' } else { c })
+        .collect();
+    s = s
+        .trim_matches(|c: char| c.is_whitespace() || c == '.')
+        .to_string();
+    if s.is_empty() {
+        s = "untitled".to_string();
     }
-
-    encrypted_text
+    s
 }
 
-/// Decrypts a given string using a Caesar cipher with a reverse shift of 23 positions.
-/// It uses the Spanish alphabet (a-z, including ñ) and preserves case.
-/// Characters not found in the Spanish alphabet (e.g., spaces, numbers, punctuation)
-/// are left unchanged.
-///
-/// # Arguments
-///
-/// * `text` - A string slice (`&str`) to be decrypted.
-///
-/// # Returns
-///
-/// A `String` containing the decrypted text.
-///
-/// # Example
-///
-/// ```
-/// let encrypted_text = "Ejkx Jqfmk, bqrv bq rfx oqrbx zkf hx kxbqx L.";
-/// let decrypted_text = decrypt_spanish_caesar(encrypted_text);
-/// // Expected output: "Hola Mundo, esto es una prueba con la letra Ñ."
-/// println!("{}", decrypted_text);
-/// ```
-pub fn decrypt_spanish_caesar(text: &str) -> String {
-    // Define the Spanish alphabet including 'ñ'
-    const ALPHABET: &str = "abcdefghijklmnñopqrstuvwxyz";
-    let alphabet_chars: Vec<char> = ALPHABET.chars().collect();
-    let alphabet_len = alphabet_chars.len(); // Should be 27 (26 letters + ñ)
-    let shift = 23; // The original encryption shift value
+// pub fn unique_filename_in_dir(dir: &PathBuf, base: &str, ext: &str) -> String {
+//     let mut candidate = format!("{}.{}", base, ext);
+//     let mut counter = 1usize;
+//     while dir.join(&candidate).exists() {
+//         candidate = format!("{} ({}){}", base, counter, ext);
+//         counter += 1;
+//     }
+//     candidate
+// }
 
-    // Initialize a new string to store the decrypted result
-    let mut decrypted_text = String::new();
-
-    // Iterate over each character in the input text
-    for char_to_decrypt in text.chars() {
-        let mut found_and_decrypted = false;
-
-        // Check for lowercase characters
-        if char_to_decrypt.is_lowercase() {
-            if let Some(index) = alphabet_chars.iter().position(|&c| c == char_to_decrypt) {
-                // Calculate the new index for decryption
-                // (index - shift + alphabet_len) ensures the result is non-negative before modulo
-                let new_index = (index as isize - shift as isize + alphabet_len as isize) % alphabet_len as isize;
-                decrypted_text.push(alphabet_chars[new_index as usize]);
-                found_and_decrypted = true;
-            }
+pub fn validate_local_files(db: &mut DatabaseV2) {
+    // 1. Filtrar tabs: remover tabs locales cuyos archivos no existan
+    db.session.tabs.retain(|tab| {
+        if let Some(path) = &tab.path {
+            // Es una tab local, verificar que el archivo exista
+            return fs::metadata(path).is_ok();
         }
-        // Check for uppercase characters
-        else if char_to_decrypt.is_uppercase() {
-            // Convert to lowercase to find its position in the alphabet
-            let lower_char = char_to_decrypt.to_ascii_lowercase();
-            if let Some(index) = alphabet_chars.iter().position(|&c| c == lower_char) {
-                // Calculate the new index for decryption
-                let new_index = (index as isize - shift as isize + alphabet_len as isize) % alphabet_len as isize;
-                // Convert the new character back to uppercase before pushing
-                decrypted_text.push(alphabet_chars[new_index as usize].to_ascii_uppercase());
-                found_and_decrypted = true;
-            }
-        }
+        // Es untitled (path == None), siempre mantener
+        true
+    });
 
-        // If the character was not a Spanish alphabet letter (e.g., space, punctuation, number),
-        // append it unchanged.
-        if !found_and_decrypted {
-            decrypted_text.push(char_to_decrypt);
+    // 2. Limpiar recentFiles: remover entradas de archivos que no existan
+    db.recent_files.retain(|path, _| fs::metadata(path).is_ok());
+
+    // 3. Validar currentTabId: si apunta a una tab que ya no existe, ponerlo en None
+    if let Some(current_id) = &db.session.current_tab_id {
+        let tab_exists = db.session.tabs.iter().any(|tab| &tab.id == current_id);
+        if !tab_exists {
+            db.session.current_tab_id = None;
         }
     }
 
-    decrypted_text
+    // 4. Si no hay current pero hay tabs, seleccionar la primera
+    if db.session.current_tab_id.is_none() && !db.session.tabs.is_empty() {
+        db.session.current_tab_id = Some(db.session.tabs[0].id.clone());
+    }
 }

@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Taking Notes",
   "version": "../package.json",
-  "identifier": "com.dlz.dev",
+  "identifier": "com.taking-notes.dev",
   "build": {
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "decorations": false,
         "title": "Taking Notes",
         "resizable": true,
         "fullscreen": false,
@@ -54,9 +55,7 @@
         "installMode": "passive"
       },
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMxMTVGMUQ5MDI5NzI1MDYKUldRR0paY0MyZkVWd1ljQ2daRlhrM1ZoQklQM1B4eVpnOHhNdW9hYXRaMElSaWRLTXlqSHd4VysK",
-      "endpoints": [
-        "https://github.com/alejandrodalzotto/taking-notes/releases/latest/download/latest.json"
-      ]
+      "endpoints": ["https://github.com/alejandrodalzotto/taking-notes/releases/latest/download/latest.json"]
     }
   }
 }
