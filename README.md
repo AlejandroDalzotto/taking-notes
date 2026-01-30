@@ -1,6 +1,6 @@
 # Taking notes
 
-This is a [Next.js](https://nextjs.org) project created alongside [Tauri](https://tauri.app/) with the goal of providing a desktop application that centralizes the creation of notes in Markdown or plain text format.
+This is a [Next.js](https://nextjs.org) project created alongside [Tauri](https://tauri.app/) with the goal of providing a desktop application that centralizes the creation of notes.
 
 ## Getting Started
 
@@ -27,8 +27,10 @@ This will create a production-ready version of the application in the `src-tauri
 
 ## Features
 
-- Create, edit, and delete notes in Markdown or plain text format.
-- Search for notes by title.
-- Dark mode by default (new themes are coming soon).
-- Responsive design for different screen sizes.
-- Cross-platform compatibility for Windows and Linux (not yet tested in Linux).
+- Full CRUD support for plain-text notes.
+- Quick access to recently opened files.
+- Dark mode enabled by default (with more themes coming soon).
+- Responsive layout optimized for different screen sizes.
+- Multi-tab support for working with multiple files at once.
+- Automatic session saving on close and seamless recovery on launch to prevent data loss.
+- Fast, reliable, and always aiming for better performance.
