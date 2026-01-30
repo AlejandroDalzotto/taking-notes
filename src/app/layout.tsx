@@ -1,16 +1,16 @@
 "use client";
 
 import { Exo_2 } from "next/font/google";
-import { Toaster } from "sonner";
 import "./globals.css";
 import Footer from "@/components/footer";
 import AppHeader from "@/components/app-header";
 import MenuBar from "@/components/menu-bar";
 import { useEditorActions } from "@/stores/editor";
 import { useEffect } from "react";
-// import UpdaterRunner from "@/components/updater-runner";
+import UpdaterRunner from "@/components/updater-runner";
 import MigrationRunner from "@/components/migration-runner";
 import { useMigrationStatus } from "@/stores/migration";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 const exo2 = Exo_2({
   variable: "--font-exo-2",
@@ -24,15 +24,37 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { initialize } = useEditorActions();
-  const status = useMigrationStatus();
+  const { initialize, persistSession } = useEditorActions();
+  const migrationStatus = useMigrationStatus();
 
   useEffect(() => {
-    console.log({ status });
-    if (status === "complete") {
+    if (migrationStatus === "complete") {
       initialize();
     }
-  }, [status]);
+  }, [migrationStatus]);
+
+  useEffect(() => {
+    const appWindow = getCurrentWindow();
+
+    const handleMinimize = () => appWindow.minimize();
+    const handleMaximize = () => appWindow.toggleMaximize();
+    const handleClose = () => appWindow.close();
+
+    document.getElementById("titlebar-minimize")?.addEventListener("click", handleMinimize);
+    document.getElementById("titlebar-maximize")?.addEventListener("click", handleMaximize);
+    document.getElementById("titlebar-close")?.addEventListener("click", handleClose);
+
+    const unlisten = appWindow.onCloseRequested(async () => {
+      await persistSession();
+    });
+
+    return () => {
+      document.getElementById("titlebar-minimize")?.removeEventListener("click", handleMinimize);
+      document.getElementById("titlebar-maximize")?.removeEventListener("click", handleMaximize);
+      document.getElementById("titlebar-close")?.removeEventListener("click", handleClose);
+      unlisten.then((f) => f());
+    };
+  }, []);
 
   return (
     <html lang="en">
@@ -45,16 +67,7 @@ export default function RootLayout({
         </header>
         <main className="flex flex-col relative overflow-hidden row-span-2">{children}</main>
         <Footer />
-        <Toaster
-          position="bottom-left"
-          toastOptions={{
-            unstyled: true,
-            className:
-              "flex border border-white/10 min-h-16 text-sm items-center gap-x-2 px-3 py-2 rounded-md bg-neutral-900 text-neutral-50 fill-neutral-50",
-          }}
-          visibleToasts={1}
-        />
-        {/*<UpdaterRunner />*/}
+        <UpdaterRunner />
         <MigrationRunner />
       </body>
     </html>

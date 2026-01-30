@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { useUpdaterStore } from "@/stores/updater";
+import { useCheckForUpdates } from "@/stores/updater";
 
 export default function UpdaterRunner() {
-  const { checkForUpdates, status } = useUpdaterStore();
+  const checkForUpdates = useCheckForUpdates();
 
   useEffect(() => {
-    if (status === "idle") {
-      checkForUpdates();
-    }
-  }, [checkForUpdates, status]);
+    checkForUpdates();
+  }, [checkForUpdates]);
 
   return null;
 }

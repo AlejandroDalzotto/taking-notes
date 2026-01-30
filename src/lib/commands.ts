@@ -1,11 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { DatabaseV2, SchemaVersion, SessionTab, Tab, TabType } from "@/lib/types";
 
-export async function getSchemaVersion(): Promise<SchemaVersion> {
-  const version = await invoke<SchemaVersion>("get_schema_version");
-  return version;
-}
-
 export async function saveFile(path: string, content: string) {
   const message = await invoke("save_file", { entry: { path, content } });
   return message;
