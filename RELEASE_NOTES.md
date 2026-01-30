@@ -1,17 +1,16 @@
-# 🎉 New version: v0.4.0
+# 🎉 New version: v1.0.0
 
-New features and improvements have been added to the app!
+The first stable version of Taking Notes has been released!
 
----
+This version aims to provide a more polished and user-friendly experience. It includes several new features and improvements:
 
-## Features
-
-- Code blocks are now syntax-highlighted in the final Markdown preview.
-- Text highlighting has been added while editing or creating Markdown-based notes.
-- A grainy background has been introduced to the app.
-- App icons have been updated for a more modern look.
-- You can now preview notes as HTML code editing or creating them before saving. Available for both text plain and Markdown-based notes.
-- Added a Markdown preview visualizer that allowed users to see their notes while editing or creating them. Only available for Markdown-based notes.
+- Markdown syntax highlighting is no longer supported, now all files are displayed in the editor as plain text on purpose.
+- Improved performance and stability.
+- Dark mode is set by default, new themes will be available soon.
+- Multi tab support for editing multiple files simultaneously.
+- Improved accessibility with some keyboard shortcuts, new shortcuts will be available soon.
+- You can now visualize the notes you've been working on in a "recent files" section.
+- Session recovery support. Now if you close the app and reopen it, your last session will be restored automatically.
 
 ---
 
