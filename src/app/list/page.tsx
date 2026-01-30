@@ -2,11 +2,12 @@
 
 import ListPageLoader from "@/components/list-page-loader";
 import { useRecentFiles, useEditorActions } from "@/stores/editor";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+// import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FolderSearch, FileText, Clock } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 
 export default function ListPage() {
   const recentFiles = useRecentFiles();
@@ -88,10 +89,10 @@ export default function ListPage() {
               </div>
 
               <motion.button
-                className="h-fit p-2 rounded-md border border-neutral-800 transition-all text-neutral-600 hover:text-neutral-50 hover:border-neutral-600 hover:bg-neutral-800 opacity-0 group-hover:opacity-100"
-                onClick={(e) => {
+                className="h-fit p-2 cursor-pointer rounded-md border border-neutral-800 transition-all text-neutral-600 hover:text-neutral-50 hover:border-neutral-600 hover:bg-neutral-800 opacity-0 group-hover:opacity-100"
+                onClick={async (e) => {
                   e.stopPropagation();
-                  revealItemInDir(note.path);
+                  await invoke("plugin:opener|reveal_item_in_dir", { path: note.path });
                 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
