@@ -1,124 +1,72 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 @plugin '@tailwindcss/typography';
 
 @theme {
-  --font-exo-2: var(--font-exo-2);
-}
-
-*: {
-  font-family: var(--font-exo-2);
+    --font-exo-2: var(--font-exo-2);
 }
 
 :root {
-  /* Sugar high variables */
-  --sh-class: #82aaff;
-  --sh-identifier: #d6deeb;
-  --sh-sign: #7fdbca;
-  --sh-property: #addb67;
-  --sh-entity: #ffcb8b;
-  --sh-jsxliterals: #c792ea;
-  --sh-string: #ecc48d;
-  --sh-keyword: #ff5874;
-  --sh-comment: #5c6773;
-
-  /* Loading variables */
-  --uib-size: 37px;
-  --uib-color: oklch(98.5% 0 0);
-  --uib-speed: .9s;
-  --uib-bg-opacity: .1;
-}
-
-.markdown > * {
-  all: revert;
-}
-
-/* Markdown preview dark mode styles */
-.md-block-code {
-  color: #b5e853;
-}
-
-.md-html-tag {
-  color: #7ec3fa;
-}
-
-.md-bold {
-  @apply text-rose-500
-}
-
-.md-italic {
-  color: #f7c873;
-  font-style: italic;
-}
-
-.md-inline-code {
-  color: #b5e853;
-}
-
-.md-heading {
-  color: #7ec3fa;
-}
-
-.md-list {
-  color: #e1e1e6;
-}
-
-.md-link-text {
-  color: #7ec3fa;
-  text-decoration: underline;
-}
-
-.md-link-url {
-  color: #b5e853;
-  opacity: 0.8;
-}
-
-.md-blockquote {
-  color: #a1a1aa;
-}
-
-.md-table {
-  color: #e1e1e6;
-}
-
-.md-hr {
-  color: #444857;
-}
-
-.md-html-comment {
-  color: #6e7681;
+    /* Loading variables */
+    --uib-size: 37px;
+    --uib-color: oklch(98.5% 0 0);
+    --uib-speed: 0.9s;
+    --uib-bg-opacity: 0.1;
 }
 
 /* Loading classes */
 .loading__container {
-  height: var(--uib-size);
-  width: var(--uib-size);
-  transform-origin: center;
-  overflow: visible;
+    height: var(--uib-size);
+    width: var(--uib-size);
+    transform-origin: center;
+    overflow: visible;
 }
 
 .loading__car {
-  fill: none;
-  stroke: var(--uib-color);
-  stroke-dasharray: 15, 85;
-  stroke-dashoffset: 0;
-  stroke-linecap: round;
-  animation: loadingTravel var(--uib-speed) linear infinite;
-  will-change: stroke-dasharray, stroke-dashoffset;
-  transition: stroke 0.5s ease;
+    fill: none;
+    stroke: var(--uib-color);
+    stroke-dasharray: 15, 85;
+    stroke-dashoffset: 0;
+    stroke-linecap: round;
+    animation: loadingTravel var(--uib-speed) linear infinite;
+    will-change: stroke-dasharray, stroke-dashoffset;
+    transition: stroke 0.5s ease;
 }
 
 .loading__track {
-  stroke: var(--uib-color);
-  opacity: var(--uib-bg-opacity);
-  transition: stroke 0.5s ease;
+    stroke: var(--uib-color);
+    opacity: var(--uib-bg-opacity);
+    transition: stroke 0.5s ease;
 }
 
 @keyframes loadingTravel {
-  0% {
-    stroke-dashoffset: 0;
-  }
+    0% {
+        stroke-dashoffset: 0;
+    }
 
-  100% {
-    stroke-dashoffset: -100;
-  }
+    100% {
+        stroke-dashoffset: -100;
+    }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(63, 63, 70, 0.5);
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(82, 82, 91, 0.8);
+}
+
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(63, 63, 70, 0.5) transparent;
 }
