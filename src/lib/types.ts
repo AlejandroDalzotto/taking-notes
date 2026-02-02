@@ -1,15 +1,6 @@
-import { JSX } from "react";
-
 export enum SchemaVersion {
   V1 = "V1",
   V2 = "V2",
-}
-
-export interface NavLink {
-  id: string;
-  label: string;
-  href: string;
-  icon: JSX.Element;
 }
 
 export interface SessionTab {

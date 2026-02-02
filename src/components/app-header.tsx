@@ -170,22 +170,31 @@ export default function AppHeader() {
         <div className="flex gap-x-2 ml-2 shrink-0">
           <button
             id="titlebar-minimize"
-            className="appearance-none inline-flex justify-center items-center w-7 h-7 bg-transparent hover:bg-white/10 rounded transition-all hover:text-neutral-50 text-neutral-300 active:scale-90 hover:scale-105"
+            className="appearance-none inline-flex justify-center items-center w-7 h-7 bg-transparent hover:bg-white/10 rounded  hover:text-neutral-50 text-neutral-300 active:scale-90 hover:scale-105"
             title="minimize"
+            style={{
+              transition: "color 150ms ease, background-color 150ms ease, transform 150ms ease",
+            }}
           >
             <Minimize className="w-3.5 h-3.5" />
           </button>
           <button
             id="titlebar-maximize"
             title="maximize"
-            className="appearance-none inline-flex justify-center items-center w-7 h-7 bg-transparent hover:bg-white/10 rounded transition-all hover:text-neutral-50 text-neutral-300 active:scale-90 hover:scale-105"
+            style={{
+              transition: "color 150ms ease, background-color 150ms ease, transform 150ms ease",
+            }}
+            className="appearance-none inline-flex justify-center items-center w-7 h-7 bg-transparent hover:bg-white/10 rounded hover:text-neutral-50 text-neutral-300 active:scale-90 hover:scale-105"
           >
             <Maximize className="w-3.5 h-3.5" />
           </button>
           <button
             id="titlebar-close"
             title="close"
-            className="appearance-none inline-flex justify-center items-center w-7 h-7 bg-transparent hover:bg-red-500/10 rounded transition-all hover:text-red-500 text-neutral-300 active:scale-90 hover:scale-105"
+            style={{
+              transition: "color 150ms ease, background-color 150ms ease, transform 150ms ease",
+            }}
+            className="appearance-none inline-flex justify-center items-center w-7 h-7 bg-transparent hover:bg-red-500/10 rounded hover:text-red-500 text-neutral-300 active:scale-90 hover:scale-105"
           >
             <X className="w-3.5 h-3.5" />
           </button>

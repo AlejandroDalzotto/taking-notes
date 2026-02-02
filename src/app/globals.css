@@ -1,10 +1,6 @@
 @import "tailwindcss";
 @plugin '@tailwindcss/typography';
 
-@theme {
-    --font-exo-2: var(--font-exo-2);
-}
-
 :root {
     /* Loading variables */
     --uib-size: 37px;

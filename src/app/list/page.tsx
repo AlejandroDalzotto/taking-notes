@@ -2,8 +2,7 @@
 
 import ListPageLoader from "@/components/list-page-loader";
 import { useRecentFiles, useEditorActions } from "@/stores/editor";
-// import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { motion } from "motion/react";
+// import { revealItemInDir } from "@tauri-apps/plugin-opener"; // seems to be buggy. So we will use the invoke function manually instead.
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FolderSearch, FileText, Clock } from "lucide-react";
@@ -63,17 +62,14 @@ export default function ListPage() {
             <p>No recent files found</p>
           </div>
         ) : (
-          filteredNotes.map((note, index) => (
-            <motion.div
+          filteredNotes.map((note) => (
+            <div
               onClick={() => {
                 openByPath(note.path);
                 router.push("/");
               }}
               className="flex cursor-pointer justify-between items-center py-3 px-3 hover:bg-white/5 rounded-md mb-1 group transition-colors"
               key={note.path}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: index * 0.03 }}
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="p-2 rounded bg-neutral-900 text-neutral-400 group-hover:text-blue-400 transition-colors">
@@ -88,19 +84,20 @@ export default function ListPage() {
                 </div>
               </div>
 
-              <motion.button
-                className="h-fit p-2 cursor-pointer rounded-md border border-neutral-800 transition-all text-neutral-600 hover:text-neutral-50 hover:border-neutral-600 hover:bg-neutral-800 opacity-0 group-hover:opacity-100"
+              <button
+                className="h-fit p-2 cursor-pointer rounded-md border border-neutral-800 text-neutral-600 hover:text-neutral-50 hover:border-neutral-600 hover:bg-neutral-800 opacity-0 group-hover:opacity-100"
+                style={{
+                  transition: "color 150ms ease, border-color 150ms ease, background-color 150ms ease, transform 150ms ease, opacity 150ms ease",
+                }}
                 onClick={async (e) => {
                   e.stopPropagation();
                   await invoke("plugin:opener|reveal_item_in_dir", { path: note.path });
                 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 title="Reveal in file explorer"
               >
                 <FolderSearch className="w-4 h-4" />
-              </motion.button>
-            </motion.div>
+              </button>
+            </div>
           ))
         )}
       </div>

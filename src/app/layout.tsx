@@ -1,23 +1,15 @@
 "use client";
 
-import { Exo_2 } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/footer";
 import AppHeader from "@/components/app-header";
 import MenuBar from "@/components/menu-bar";
 import { useEditorActions } from "@/stores/editor";
 import { useEffect } from "react";
-import UpdaterRunner from "@/components/updater-runner";
-import MigrationRunner from "@/components/migration-runner";
+// import UpdaterRunner from "@/components/updater-runner";
+// import MigrationRunner from "@/components/migration-runner";
 import { useMigrationStatus } from "@/stores/migration";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-
-const exo2 = Exo_2({
-  variable: "--font-exo-2",
-  style: "normal",
-  weight: "variable",
-  subsets: ["latin"],
-});
 
 export default function RootLayout({
   children,
@@ -58,17 +50,15 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body
-        className={`${exo2.variable} antialiased grid grid-rows-[min-content_1fr_min-content] font-exo-2 w-screen relative h-screen text-neutral-50 bg-neutral-950`}
-      >
+      <body className="font-sans antialiased grid grid-rows-[min-content_1fr_min-content] w-screen relative h-screen text-neutral-50 bg-neutral-950">
         <header className="row-span-1">
           <AppHeader />
           <MenuBar />
         </header>
         <main className="flex flex-col relative overflow-hidden row-span-2">{children}</main>
         <Footer />
-        <UpdaterRunner />
-        <MigrationRunner />
+        {/*<UpdaterRunner />*/}
+        {/*<MigrationRunner />*/}
       </body>
     </html>
   );
