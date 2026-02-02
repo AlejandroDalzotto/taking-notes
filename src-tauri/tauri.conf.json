@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Taking Notes",
   "version": "../package.json",
-  "identifier": "com.taking-notes.app",
+  "identifier": "com.taking-notes.dev",
   "build": {
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
@@ -46,7 +46,12 @@
       "icons/Square310x310Logo.png",
       "icons/StoreLogo.png"
     ],
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": true,
+    "publisher": "Alejandro Dalzotto",
+    "longDescription": "Taking Notes is a simple and easy-to-use note-taking application that allows you to create, edit, and organize your notes in a single place.",
+    "shortDescription": "Taking Notes is a simple and easy-to-use note-taking application.",
+    "copyright": "Copyright © 2026 Alejandro Dalzotto",
+    "category": "Productivity"
   },
   "plugins": {
     "updater": {
