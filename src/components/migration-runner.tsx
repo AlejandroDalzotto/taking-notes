@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { useCheckMigration } from "@/stores/migration";
 import { useUpdaterStatus } from "@/stores/updater";

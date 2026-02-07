@@ -1,6 +1,6 @@
 # Taking notes
 
-This is a [Next.js](https://nextjs.org) project created alongside [Tauri](https://tauri.app/) with the goal of providing a desktop application that centralizes the creation of notes.
+This is a [Vite](https://vitejs.dev/) project created alongside [Tauri](https://tauri.app/) with the goal of providing a desktop application that centralizes the creation of notes.
 
 ## Getting Started
 

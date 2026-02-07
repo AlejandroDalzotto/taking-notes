@@ -1,18 +1,13 @@
-"use client";
-
-import ListPageLoader from "@/components/list-page-loader";
+import RecentFilesPageLoader from "@/components/recent-files-page-loader";
 import { useRecentFiles, useEditorActions } from "@/stores/editor";
-// import { revealItemInDir } from "@tauri-apps/plugin-opener"; // seems to be buggy. So we will use the invoke function manually instead.
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { FolderSearch, FileText, Clock } from "lucide-react";
-import { invoke } from "@tauri-apps/api/core";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
-export default function ListPage() {
+export default function RecentFilesPage() {
   const recentFiles = useRecentFiles();
-  const { openByPath } = useEditorActions();
+  const { openByPath, resetCurrent } = useEditorActions();
   const [searchQuery, setSearchQuery] = useState("");
-  const router = useRouter();
 
   const filteredNotes = useMemo(() => {
     const files = Object.values(recentFiles);
@@ -37,8 +32,12 @@ export default function ListPage() {
   };
 
   if (recentFiles === null) {
-    return <ListPageLoader />;
+    return <RecentFilesPageLoader />;
   }
+
+  useEffect(() => {
+    resetCurrent();
+  }, []);
 
   return (
     <div className="h-full relative flex flex-col text-sm bg-neutral-950">
@@ -66,7 +65,6 @@ export default function ListPage() {
             <div
               onClick={() => {
                 openByPath(note.path);
-                router.push("/");
               }}
               className="flex cursor-pointer justify-between items-center py-3 px-3 hover:bg-white/5 rounded-md mb-1 group transition-colors"
               key={note.path}
@@ -91,7 +89,7 @@ export default function ListPage() {
                 }}
                 onClick={async (e) => {
                   e.stopPropagation();
-                  await invoke("plugin:opener|reveal_item_in_dir", { path: note.path });
+                  await revealItemInDir(note.path);
                 }}
                 title="Reveal in file explorer"
               >

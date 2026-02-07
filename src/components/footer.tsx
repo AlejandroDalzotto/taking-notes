@@ -1,5 +1,3 @@
-"use client";
-
 import { useCurrent, useIsInitialized } from "@/stores/editor";
 export default function Footer() {
   const current = useCurrent();
@@ -25,7 +23,7 @@ export default function Footer() {
         <div />
       )}
       <div className="flex items-center gap-x-4 *:border-l *:border-neutral-800 *:pr-10 *:pl-2">
-        <p>v1.0.0</p>
+        <p>v0.0.1 (dev)</p>
       </div>
     </footer>
   );

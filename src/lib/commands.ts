@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { DatabaseV2, SchemaVersion, SessionTab, Tab, TabType } from "@/lib/types";
+import { DatabaseV2, SessionTab, Tab, TabType } from "@/lib/types";
 
 export async function saveFile(path: string, content: string) {
   const message = await invoke("save_file", { entry: { path, content } });

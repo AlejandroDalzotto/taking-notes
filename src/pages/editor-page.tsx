@@ -1,29 +1,14 @@
-"use client";
-
 import { useCurrent, useEditorActions } from "@/stores/editor";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
-export default function Editor() {
+export default function HomePage() {
   const current = useCurrent();
-  const { setContent, saveCurrentFileOnDisk } = useEditorActions();
+  const { setContent } = useEditorActions();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Handles CTRL + S to save
-  useEffect(() => {
-    const handler = async (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key.toLowerCase() === "s") {
-        e.preventDefault();
-        await saveCurrentFileOnDisk();
-      }
-    };
-
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [saveCurrentFileOnDisk]);
 
   if (!current) {
     return (
-      <div className="flex h-full items-center justify-center text-neutral-500">
+      <div className="flex h-full items-center justif,y-center text-neutral-500">
         <p>No file open</p>
       </div>
     );

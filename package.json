@@ -1,16 +1,16 @@
 {
   "name": "taking-notes",
-  "version": "0.0.1-dev",
+  "version": "0.0.1",
   "private": true,
   "author": "Alejandro Dalzotto",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "tauri": "tauri"
   },
   "dependencies": {
+    "@tauri-apps/api": "2.5.0",
     "@tauri-apps/plugin-dialog": "~2.6.0",
     "@tauri-apps/plugin-opener": "~2.5.3",
     "@tauri-apps/plugin-process": "~2.3.1",
@@ -18,24 +18,23 @@
     "@tauri-apps/plugin-window-state": "~2.4.1",
     "clsx": "2.1.1",
     "lucide-react": "^0.562.0",
-    "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "zustand": "^5.0.10"
+    "react-router": "^7.13.0",
+    "react-virtuoso": "^4.18.1",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
-    "@tailwindcss/typography": "0.5.16",
-    "@tauri-apps/api": "2.5.0",
     "@tauri-apps/cli": "2.5.0",
-    "@types/node": "22.15.21",
+    "@types/node": "^25.2.0",
     "@types/react": "19.1.5",
     "@types/react-dom": "19.1.5",
-    "eslint": "9.27.0",
-    "eslint-config-next": "15.1.8",
+    "@vitejs/plugin-react": "^4.7.0",
     "postcss": "8.5.3",
     "tailwindcss": "^4.1.18",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "vite": "^7.3.1"
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

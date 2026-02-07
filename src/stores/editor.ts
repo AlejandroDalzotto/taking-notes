@@ -1,8 +1,8 @@
-import { openFile, saveFile } from "@/lib/commands";
-import { Tab, DatabaseV2, LocalFile, SessionTab, TabType } from "@/lib/types";
 import { save as tauriSave, open as tauriOpen, ask } from "@tauri-apps/plugin-dialog";
 import { create } from "zustand";
-import { loadEditorState, saveEditorState, serializeTabs, deserializeTabs } from "@/lib/commands";
+import { DatabaseV2, LocalFile, SessionTab, Tab, TabType } from "@/lib/types";
+import { deserializeTabs, loadEditorState, openFile, saveEditorState, saveFile, serializeTabs } from "@/lib/commands";
+import { useShallow } from "zustand/shallow";
 
 type State = {
   tabs: Tab[];
@@ -21,7 +21,8 @@ type Actions = {
   openByPath: (path: string) => Promise<void>;
   openTab: (id: string) => Promise<void>;
   closeTab: (id: string, options?: { skipConfirmation?: boolean }) => Promise<boolean>;
-  reorderTabs: (newTabs: Tab[]) => void;
+  closeCurrentTab: () => Promise<boolean>;
+  resetCurrent: () => void;
 };
 
 const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
@@ -56,6 +57,7 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
         console.error("Failed to initialize editor:", error);
         set({ isInitialized: true });
       }
+      console.log("============= Editor initialized =============");
     },
 
     persistSession: async () => {
@@ -246,7 +248,7 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
     },
 
     closeTab: async (id: string, options = {}) => {
-      const { tabs, current, actions, recentFiles } = get();
+      const { tabs, current, actions } = get();
       const tabToClose = tabs.find((t) => t.id === id);
 
       if (!tabToClose) return true;
@@ -285,13 +287,48 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
       return true;
     },
 
-    reorderTabs: (newTabs: Tab[]) => {
-      set({ tabs: newTabs });
+    closeCurrentTab: async () => {
+      const { tabs, current, actions } = get();
+
+      if (!current) return true;
+
+      const tabToClose = tabs.find((t) => t.id === current.id);
+
+      if (!tabToClose) return true;
+
+      if (tabToClose.isDirty) {
+        const userChoice = await ask(`"${tabToClose.filename}" has unsaved changes. Do you want to save before closing?`, {
+          title: "Unsaved Changes",
+          kind: "warning",
+          okLabel: "Save",
+          cancelLabel: "Don't Save",
+        });
+
+        if (userChoice === null) return false;
+
+        if (userChoice === true) {
+          await actions.saveCurrentFileOnDisk();
+        }
+      }
+
+      const closedIndex = tabs.findIndex((t) => t.id === current.id);
+      const newTabs = tabs.filter((tab) => tab.id !== current.id);
+      let newCurrent = current;
+      newCurrent = newTabs[closedIndex - 1] ?? newTabs[closedIndex] ?? null;
+
+      set({ tabs: newTabs, current: newCurrent });
+      return true;
+    },
+
+    resetCurrent() {
+      set({ current: null });
     },
   },
 }));
 
-export const useCurrent = () => useEditorStore((state) => state.current);
+export const useCurrent = () => useEditorStore(useShallow((state) => state.current));
+export const useHasTabs = () => useEditorStore(useShallow((state) => state.tabs.length > 0));
+export const useIsActiveTab = (tabId: string) => useEditorStore(useShallow((state) => state.current?.id === tabId));
 export const useTabs = () => useEditorStore((state) => state.tabs);
 export const useRecentFiles = () => useEditorStore((state) => state.recentFiles);
 export const useEditorActions = () => useEditorStore((state) => state.actions);
