@@ -8,7 +8,6 @@ use tauri::command;
 use crate::utils;
 use crate::utils::sanitize_filename;
 use crate::utils::validate_local_files;
-use std::fs;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -103,9 +102,11 @@ fn get_desktop_migration_folder(app: &tauri::AppHandle) -> Result<PathBuf, Strin
     Ok(desktop.join("taking-notes-app-notes"))
 }
 
-/// Verifica si existe la estructura V1 y si es necesario migrar
+/// Check whether V1 data exists and a migration to V2 is needed.
+///
+/// Uses `tokio::fs` so the async runtime thread is never blocked.
 #[command]
-pub fn check_for_migration_to_v2(app: tauri::AppHandle) -> Result<bool, String> {
+pub async fn check_for_migration_to_v2(app: tauri::AppHandle) -> Result<bool, String> {
     #[cfg(dev)]
     {
         println!("Checking for migration to V2");
@@ -114,8 +115,8 @@ pub fn check_for_migration_to_v2(app: tauri::AppHandle) -> Result<bool, String> 
     let v1_manager_path = get_v1_manager_path(&app);
     let v2_manager_path = get_v2_manager_path(&app);
 
-    // Si ya existe V2, no necesitamos migrar
-    if v2_manager_path.exists() {
+    // If V2 already exists there is nothing to do.
+    if tokio::fs::metadata(&v2_manager_path).await.is_ok() {
         #[cfg(dev)]
         {
             println!("V2 manager exists, no migration needed");
@@ -123,144 +124,152 @@ pub fn check_for_migration_to_v2(app: tauri::AppHandle) -> Result<bool, String> 
         return Ok(false);
     }
 
-    // Si existe V1, verificar que sea válido
-    if v1_manager_path.exists() {
+    // If V1 exists, verify it is valid JSON.
+    if tokio::fs::metadata(&v1_manager_path).await.is_ok() {
         #[cfg(dev)]
         {
             println!("V1 manager exists, migration needed");
         }
-        let raw_manager_data = std::fs::read_to_string(&v1_manager_path)
+
+        let raw_manager_data = tokio::fs::read_to_string(&v1_manager_path)
+            .await
             .map_err(|e| format!("Error reading V1 manager: {}", e))?;
 
         match serde_json::from_str::<Vec<NoteV1>>(&raw_manager_data) {
-            Ok(_) => Ok(true),   // V1 válido encontrado, necesita migración
-            Err(_) => Ok(false), // Archivo corrupto, no migrar
+            Ok(_) => Ok(true),   // Valid V1 found — migration needed.
+            Err(_) => Ok(false), // Corrupt file — skip migration.
         }
     } else {
-        Ok(false) // No hay V1, no necesita migración
+        Ok(false) // No V1 data at all.
     }
 }
 
-/// Migra de V1 a V2:
-/// 1. Lee notes-manager.json del local app data
-/// 2. Mueve los archivos de notas a una carpeta en el escritorio
-/// 3. Crea session.json en el app data (no local)
-/// 4. Limpia el directorio local app data
+/// Migrate from V1 to V2.
+///
+/// This is a one-time bulk operation that copies many files sequentially, so
+/// the entire body runs inside `spawn_blocking` to keep the async runtime free.
 #[command]
-pub fn migrate_v1_to_v2(app: tauri::AppHandle) -> Result<String, String> {
+pub async fn migrate_v1_to_v2(app: tauri::AppHandle) -> Result<String, String> {
     let v1_manager_path = get_v1_manager_path(&app);
     let v1_data_dir = get_v1_local_data_dir(&app);
     let v2_data_dir = get_v2_data_dir(&app);
     let v2_manager_path = get_v2_manager_path(&app);
-
-    // Verificar que V1 existe
-    if !v1_manager_path.exists() {
-        return Err("No V1 data found to migrate".to_string());
-    }
-
-    // Leer datos V1
-    let data_v1 = std::fs::read_to_string(&v1_manager_path)
-        .map_err(|e| format!("Error reading V1 manager: {}", e))?;
-
-    let notes_v1: Vec<NoteV1> =
-        serde_json::from_str(&data_v1).map_err(|e| format!("Error parsing V1 data: {}", e))?;
-
-    // Crear carpeta de migración en el escritorio
     let desktop_folder = get_desktop_migration_folder(&app)?;
-    fs::create_dir_all(&desktop_folder)
-        .map_err(|e| format!("Error creating desktop folder: {}", e))?;
 
-    // Crear directorio V2 si no existe
-    fs::create_dir_all(&v2_data_dir).map_err(|e| format!("Error creating V2 data dir: {}", e))?;
+    tokio::task::spawn_blocking(move || {
+        use std::fs;
 
-    let mut recent_files: HashMap<String, LocalFile> = HashMap::new();
-    let mut migrated_count = 0;
-
-    // Migrar cada nota
-    for note in notes_v1.into_iter() {
-        let old_filename = format!("{}.{}", note.tag, note.file_extension);
-        let src = v1_data_dir.join(&old_filename);
-
-        if src.exists() {
-            let title_sanitized = sanitize_filename(&note.title);
-            let new_filename = format!("{}.{}", title_sanitized, note.file_extension);
-            let dest = desktop_folder.join(&new_filename);
-
-            // Mover archivo a escritorio
-            fs::copy(&src, &dest)
-                .map_err(|e| format!("Failed to copy file {:?} -> {:?}: {}", src, dest, e))?;
-
-            // Obtener metadata del archivo en su nueva ubicación
-            let metadata = fs::metadata(&dest)
-                .map_err(|e| format!("Error getting metadata for {:?}: {}", dest, e))?;
-
-            let mut modified: u64 = 0;
-            if let Ok(time) = metadata.modified() {
-                if let Ok(duration) = time.duration_since(std::time::UNIX_EPOCH) {
-                    modified = duration.as_millis() as u64;
-                }
-            }
-
-            // Agregar a recent_files
-            let path_string = dest.to_string_lossy().to_string();
-            recent_files.insert(
-                path_string.clone(),
-                LocalFile {
-                    id: note.tag,
-                    filename: new_filename,
-                    path: path_string,
-                    modified,
-                },
-            );
-
-            migrated_count += 1;
+        // Verify V1 exists.
+        if !v1_manager_path.exists() {
+            return Err("No V1 data found to migrate".to_string());
         }
-    }
 
-    // Crear base de datos V2
-    let db_v2 = DatabaseV2 {
-        recent_files,
-        session: EditorSession::default(),
-        schema_version: SchemaVersion::V2,
-    };
+        // Read V1 data.
+        let data_v1 = fs::read_to_string(&v1_manager_path)
+            .map_err(|e| format!("Error reading V1 manager: {}", e))?;
 
-    // Guardar session.json en V2
-    let serialized = serde_json::to_string_pretty(&db_v2)
-        .map_err(|e| format!("Error serializing V2 data: {}", e))?;
+        let notes_v1: Vec<NoteV1> =
+            serde_json::from_str(&data_v1).map_err(|e| format!("Error parsing V1 data: {}", e))?;
 
-    utils::atomic_write(&v2_manager_path, &serialized)
-        .map_err(|e| format!("Error saving V2 session.json: {}", e))?;
+        // Create the desktop migration folder.
+        fs::create_dir_all(&desktop_folder)
+            .map_err(|e| format!("Error creating desktop folder: {}", e))?;
 
-    // Limpiar directorio V1 (local app data)
-    // Intentar eliminar todo el directorio
-    if let Err(e) = fs::remove_dir_all(&v1_data_dir) {
-        // Si falla, al menos intentar eliminar el archivo manager
-        let _ = fs::remove_file(&v1_manager_path);
-        eprintln!("Warning: Could not fully clean V1 directory: {}", e);
-    }
+        // Create V2 data directory if needed.
+        fs::create_dir_all(&v2_data_dir)
+            .map_err(|e| format!("Error creating V2 data dir: {}", e))?;
 
-    let migration_message = format!(
-        "Migration successful! {} notes moved to: {}",
-        migrated_count,
-        desktop_folder.display()
-    );
+        let mut recent_files: HashMap<String, LocalFile> = HashMap::new();
+        let mut migrated_count = 0;
 
-    Ok(migration_message)
+        for note in notes_v1.into_iter() {
+            let old_filename = format!("{}.{}", note.tag, note.file_extension);
+            let src = v1_data_dir.join(&old_filename);
+
+            if src.exists() {
+                let title_sanitized = sanitize_filename(&note.title);
+                let new_filename = format!("{}.{}", title_sanitized, note.file_extension);
+                let dest = desktop_folder.join(&new_filename);
+
+                fs::copy(&src, &dest)
+                    .map_err(|e| format!("Failed to copy file {:?} -> {:?}: {}", src, dest, e))?;
+
+                let metadata = fs::metadata(&dest)
+                    .map_err(|e| format!("Error getting metadata for {:?}: {}", dest, e))?;
+
+                let mut modified: u64 = 0;
+                if let Ok(time) = metadata.modified() {
+                    if let Ok(duration) = time.duration_since(std::time::UNIX_EPOCH) {
+                        modified = duration.as_millis() as u64;
+                    }
+                }
+
+                let path_string = dest.to_string_lossy().to_string();
+                recent_files.insert(
+                    path_string.clone(),
+                    LocalFile {
+                        id: note.tag,
+                        filename: new_filename,
+                        path: path_string,
+                        modified,
+                    },
+                );
+
+                migrated_count += 1;
+            }
+        }
+
+        // Build V2 database.
+        let db_v2 = DatabaseV2 {
+            recent_files,
+            session: EditorSession::default(),
+            schema_version: SchemaVersion::V2,
+        };
+
+        let serialized = serde_json::to_string_pretty(&db_v2)
+            .map_err(|e| format!("Error serializing V2 data: {}", e))?;
+
+        utils::atomic_write(&v2_manager_path, &serialized)
+            .map_err(|e| format!("Error saving V2 session.json: {}", e))?;
+
+        // Clean up V1 directory.
+        if let Err(e) = fs::remove_dir_all(&v1_data_dir) {
+            let _ = fs::remove_file(&v1_manager_path);
+            eprintln!("Warning: Could not fully clean V1 directory: {}", e);
+        }
+
+        let migration_message = format!(
+            "Migration successful! {} notes moved to: {}",
+            migrated_count,
+            desktop_folder.display()
+        );
+
+        Ok(migration_message)
+    })
+    .await
+    .map_err(|e| format!("Migration task panicked: {}", e))?
 }
 
+/// Load the persisted editor state from disk.
+///
+/// The session file is read with `tokio::fs` and validation of referenced
+/// local files runs concurrently via [`validate_local_files`].
 #[command]
-pub fn load_editor_state(app: tauri::AppHandle) -> Result<DatabaseV2, String> {
+pub async fn load_editor_state(app: tauri::AppHandle) -> Result<DatabaseV2, String> {
     let manager_path = get_v2_manager_path(&app);
 
-    let db = if !manager_path.exists() {
+    let db = if tokio::fs::metadata(&manager_path).await.is_err() {
+        // File does not exist — return defaults.
         DatabaseV2::default()
     } else {
-        let raw = std::fs::read_to_string(&manager_path)
+        let raw = tokio::fs::read_to_string(&manager_path)
+            .await
             .map_err(|e| format!("Failed reading manager file: {}", e))?;
 
         match serde_json::from_str::<DatabaseV2>(&raw) {
             Ok(mut db) => {
-                validate_local_files(&mut db);
+                // Runs all metadata checks concurrently.
+                validate_local_files(&mut db).await;
                 db
             }
             Err(e) => {
@@ -276,23 +285,31 @@ pub fn load_editor_state(app: tauri::AppHandle) -> Result<DatabaseV2, String> {
         println!("Recent files count: {}", db.recent_files.len());
         println!("Tabs count: {}", db.session.tabs.len());
         println!("Schema version: {:?}", db.schema_version);
-        println!("\n");
+        println!();
     }
 
     Ok(db)
 }
 
+/// Persist the current editor state to disk.
+///
+/// Uses [`atomic_write_async`](utils::atomic_write_async) so the write
+/// happens on a blocking thread and the async runtime stays responsive.
 #[command]
-pub fn save_editor_state(app: tauri::AppHandle, state: DatabaseV2) -> Result<(), String> {
+pub async fn save_editor_state(app: tauri::AppHandle, state: DatabaseV2) -> Result<(), String> {
     #[cfg(dev)]
     {
         println!("Attempting to save editor state");
     }
+
     let manager_path = get_v2_manager_path(&app);
 
-    let serialized = serde_json::to_string_pretty(&state).map_err(|e| e.to_string())?;
+    let serialized =
+        serde_json::to_string_pretty(&state).map_err(|e| format!("Serialization error: {}", e))?;
 
-    utils::atomic_write(&manager_path, &serialized).map_err(|e| e.to_string())?;
+    utils::atomic_write_async(manager_path, serialized)
+        .await
+        .map_err(|e| format!("Error writing session file: {}", e))?;
 
     #[cfg(dev)]
     {
@@ -300,7 +317,7 @@ pub fn save_editor_state(app: tauri::AppHandle, state: DatabaseV2) -> Result<(),
         println!("Recent files count: {}", state.recent_files.len());
         println!("Tabs count: {}", state.session.tabs.len());
         println!("Schema version: {:?}", state.schema_version);
-        println!("\n");
+        println!();
     }
 
     Ok(())

@@ -27,6 +27,7 @@ tauri-plugin-process = "2"
 tempfile = "3.20.0"
 tauri-plugin-dialog = "2"
 chrono = "0.4.43"
+tokio = { version = "1", features = ["fs", "rt"] }
 
 # [dependencies.uuid]
 # version = "1.17.0"

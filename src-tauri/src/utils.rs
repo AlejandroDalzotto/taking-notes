@@ -1,18 +1,41 @@
-use std::fs;
+use std::collections::HashSet;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
 use tempfile::NamedTempFile;
+use tokio::task::JoinSet;
 
 use crate::commands::migration::DatabaseV2;
 
-/// Safely writes to a file, replacing its contents without risk of corruption.
-pub fn atomic_write<P: AsRef<Path>>(path: P, content: &str) -> Result<(), std::io::Error> {
-    let mut temp = NamedTempFile::new_in(path.as_ref().parent().unwrap())?;
+/// Maximum file size the app will open (10 MB).
+pub const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024;
 
+/// Safely writes to a file, replacing its contents without risk of corruption.
+/// This is a **synchronous** function — call it from `spawn_blocking` or use
+/// the async wrapper [`atomic_write_async`] instead.
+pub fn atomic_write<P: AsRef<Path>>(path: P, content: &str) -> Result<(), std::io::Error> {
+    let parent = path.as_ref().parent().ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "path has no parent directory",
+        )
+    })?;
+
+    let mut temp = NamedTempFile::new_in(parent)?;
     write!(temp, "{}", content)?;
     temp.persist(path)?;
 
     Ok(())
+}
+
+/// Async wrapper around [`atomic_write`].
+///
+/// Moves the owned data into a blocking task so the Tokio runtime thread is
+/// never stalled by disk I/O.
+pub async fn atomic_write_async(path: PathBuf, content: String) -> Result<(), std::io::Error> {
+    tokio::task::spawn_blocking(move || atomic_write(&path, &content))
+        .await
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?
 }
 
 pub fn sanitize_filename(input: &str) -> String {
@@ -30,39 +53,64 @@ pub fn sanitize_filename(input: &str) -> String {
     s
 }
 
-// pub fn unique_filename_in_dir(dir: &PathBuf, base: &str, ext: &str) -> String {
-//     let mut candidate = format!("{}.{}", base, ext);
-//     let mut counter = 1usize;
-//     while dir.join(&candidate).exists() {
-//         candidate = format!("{} ({}){}", base, counter, ext);
-//         counter += 1;
-//     }
-//     candidate
-// }
+/// Validate that local files referenced by tabs and recent-files still exist
+/// on disk.  All metadata checks run **concurrently** via a [`JoinSet`] so
+/// startup isn't blocked by slow / network-mounted drives.
+pub async fn validate_local_files(db: &mut DatabaseV2) {
+    // 1. Collect every unique path we need to check.
+    let mut paths_to_check: Vec<String> = Vec::new();
+    let mut seen = HashSet::new();
 
-pub fn validate_local_files(db: &mut DatabaseV2) {
-    // 1. Filtrar tabs: remover tabs locales cuyos archivos no existan
-    db.session.tabs.retain(|tab| {
+    for tab in &db.session.tabs {
         if let Some(path) = &tab.path {
-            // Es una tab local, verificar que el archivo exista
-            return fs::metadata(path).is_ok();
+            if seen.insert(path.clone()) {
+                paths_to_check.push(path.clone());
+            }
         }
-        // Es untitled (path == None), siempre mantener
-        true
+    }
+
+    for path in db.recent_files.keys() {
+        if seen.insert(path.clone()) {
+            paths_to_check.push(path.clone());
+        }
+    }
+
+    // 2. Check all paths concurrently.
+    let mut set = JoinSet::new();
+
+    for path in paths_to_check {
+        set.spawn(async move {
+            let exists = tokio::fs::metadata(&path).await.is_ok();
+            (path, exists)
+        });
+    }
+
+    let mut valid_paths: HashSet<String> = HashSet::new();
+
+    while let Some(result) = set.join_next().await {
+        if let Ok((path, true)) = result {
+            valid_paths.insert(path);
+        }
+    }
+
+    // 3. Filter tabs: remove local tabs whose files no longer exist.
+    db.session.tabs.retain(|tab| match &tab.path {
+        Some(path) => valid_paths.contains(path),
+        None => true, // untitled tabs are always kept
     });
 
-    // 2. Limpiar recentFiles: remover entradas de archivos que no existan
-    db.recent_files.retain(|path, _| fs::metadata(path).is_ok());
+    // 4. Filter recent files.
+    db.recent_files.retain(|path, _| valid_paths.contains(path));
 
-    // 3. Validar currentTabId: si apunta a una tab que ya no existe, ponerlo en None
+    // 5. Fix currentTabId if it points to a tab that was just removed.
     if let Some(current_id) = &db.session.current_tab_id {
-        let tab_exists = db.session.tabs.iter().any(|tab| &tab.id == current_id);
-        if !tab_exists {
+        let still_exists = db.session.tabs.iter().any(|tab| &tab.id == current_id);
+        if !still_exists {
             db.session.current_tab_id = None;
         }
     }
 
-    // 4. Si no hay current pero hay tabs, seleccionar la primera
+    // 6. If there is no current tab but tabs remain, select the first one.
     if db.session.current_tab_id.is_none() && !db.session.tabs.is_empty() {
         db.session.current_tab_id = Some(db.session.tabs[0].id.clone());
     }
