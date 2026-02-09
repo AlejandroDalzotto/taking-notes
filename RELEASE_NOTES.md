@@ -1,4 +1,4 @@
-# 🎉 New version: v1.1.0
+# 🎉 New version: v1.1.1
 
 New features:
 - Improved performance on start up.
