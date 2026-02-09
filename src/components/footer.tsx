@@ -1,18 +1,18 @@
-import { useCurrent, useIsInitialized } from "@/stores/editor";
+import { useCurrentTabMeta, useIsInitialized } from "@/stores/editor";
 export default function Footer() {
-  const current = useCurrent();
+  const currentTab = useCurrentTabMeta();
   const isInitialized = useIsInitialized();
 
   let statusText = "";
   if (!isInitialized) {
     statusText = "Initializing...";
-  } else if (current?.isDirty) {
+  } else if (currentTab?.isDirty) {
     statusText = "Modified";
   }
 
   return (
     <footer className="row-span-3 flex bg-neutral-950 text-sm text-neutral-200 ring-1 ring-neutral-800 justify-between items-center p-2 relative">
-      {current ? (
+      {currentTab ? (
         <div className="grid grid-cols-4 grow gap-x-4 max-w-xl *:border-l *:border-neutral-800 *:pr-10 *:pl-2">
           {/*<CursorInfo />*/}
           {/*<WordsInfo />*/}

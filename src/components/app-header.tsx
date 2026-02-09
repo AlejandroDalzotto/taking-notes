@@ -1,7 +1,7 @@
 import { X, Plus, FileText, Circle } from "lucide-react";
-import { useEditorActions, useHasTabs, useIsActiveTab, useTabs } from "@/stores/editor";
+import { useEditorActions, useHasTabs, useIsActiveTab, useTabsMeta } from "@/stores/editor";
 import { memo } from "react";
-import { Tab } from "@/lib/types";
+import { TabMeta } from "@/lib/types";
 import WindowControls from "@/components/window-controls";
 import { useNavigate } from "react-router";
 
@@ -44,7 +44,7 @@ const CloseTabButton = ({ tabId }: { tabId: string }) => {
   );
 };
 
-const TabItem = memo(function TabItem({ tab }: { tab: Tab }) {
+const TabItem = memo(function TabItem({ tab }: { tab: TabMeta }) {
   const { openTab } = useEditorActions();
   const isActive = useIsActiveTab(tab.id);
   const navigate = useNavigate();
@@ -80,7 +80,7 @@ const TabItem = memo(function TabItem({ tab }: { tab: Tab }) {
 });
 
 const TabList = () => {
-  const tabs = useTabs();
+  const tabs = useTabsMeta();
   return (
     <>
       {tabs.length > 0 ? (

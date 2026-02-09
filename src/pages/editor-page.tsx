@@ -1,14 +1,15 @@
-import { useCurrent, useEditorActions } from "@/stores/editor";
+import { useCurrentTabMeta, useActiveContent, useEditorActions } from "@/stores/editor";
 import { useRef } from "react";
 
 export default function HomePage() {
-  const current = useCurrent();
+  const currentTab = useCurrentTabMeta();
+  const activeContent = useActiveContent();
   const { setContent } = useEditorActions();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  if (!current) {
+  if (!currentTab) {
     return (
-      <div className="flex h-full items-center justif,y-center text-neutral-500">
+      <div className="flex h-full items-center justify-center text-neutral-500">
         <p>No file open</p>
       </div>
     );
@@ -25,7 +26,7 @@ export default function HomePage() {
           overflowWrap: "break-word",
           scrollbarGutter: "stable",
         }}
-        value={current.content || ""}
+        value={activeContent}
         onChange={(e) => {
           setContent(e.target.value);
         }}

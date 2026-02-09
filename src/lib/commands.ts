@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { DatabaseV2, SessionTab, Tab, TabType } from "@/lib/types";
+import { DatabaseV2, SessionTab, TabMeta, TabType } from "@/lib/types";
 
 export async function saveFile(path: string, content: string) {
   const message = await invoke("save_file", { entry: { path, content } });
@@ -24,21 +24,52 @@ export async function saveEditorState(state: DatabaseV2): Promise<void> {
   return await invoke("save_editor_state", { state });
 }
 
-// Helper to convert frontend Tab[] to SessionTab[]
-export function serializeTabs(tabs: Tab[]): SessionTab[] {
+/**
+ * Convert frontend TabMeta[] + a content map into SessionTab[] for persistence.
+ *
+ * Content is only stored for tabs that need it:
+ *  - dirty tabs (unsaved changes that can't be recovered from disk)
+ *  - untitled tabs (no backing file at all)
+ */
+export function serializeTabs(tabs: TabMeta[], contentMap: Record<string, string>): SessionTab[] {
   return tabs.map((tab) => ({
-    ...tab,
+    id: tab.id,
     path: tab.type === TabType.LOCAL ? tab.path : undefined,
-    content: tab.isDirty ? tab.content : undefined,
+    filename: tab.filename,
+    isDirty: tab.isDirty,
+    content: tab.isDirty || tab.type === TabType.UNTITLED ? (contentMap[tab.id] ?? "") : undefined,
   }));
 }
 
-// Helper to convert SessionTab[] to frontend Tab[]
-export function deserializeTabs(sessionTabs: SessionTab[]): Tab[] {
-  return sessionTabs.map((st) => ({
-    ...st,
-    type: st.path ? TabType.LOCAL : TabType.UNTITLED,
-  }));
+/**
+ * Restore session tabs into the runtime representation.
+ *
+ * Returns:
+ *  - `tabs`         – metadata-only array (no content) for the store's `tabs` slice
+ *  - `contentCache` – id → content for every tab that carried persisted content
+ */
+export function deserializeTabs(sessionTabs: SessionTab[]): {
+  tabs: TabMeta[];
+  contentCache: Record<string, string>;
+} {
+  const tabs: TabMeta[] = [];
+  const contentCache: Record<string, string> = {};
+
+  for (const st of sessionTabs) {
+    tabs.push({
+      id: st.id,
+      type: st.path ? TabType.LOCAL : TabType.UNTITLED,
+      filename: st.filename,
+      path: st.path,
+      isDirty: st.isDirty,
+    });
+
+    if (st.content !== undefined) {
+      contentCache[st.id] = st.content;
+    }
+  }
+
+  return { tabs, contentCache };
 }
 
 /**

@@ -8,7 +8,7 @@ export interface SessionTab {
   path?: string; // undefined for untitled
   filename: string;
   isDirty: boolean;
-  content?: string; // Only for untitled tabs
+  content?: string; // Only for dirty/untitled tabs
 }
 
 export interface EditorSession {
@@ -29,14 +29,28 @@ export interface DatabaseV2 {
   schemaVersion: "V2";
 }
 
-// Frontend Tab type (extends session with runtime properties)
-export interface Tab {
+/**
+ * Tab metadata without content — used in the store's `tabs[]` array and
+ * anywhere the UI only needs to render tab chrome (header, footer, etc.).
+ *
+ * Separating metadata from content is the key performance optimisation:
+ * `setContent` no longer clones the entire tabs array on every keystroke.
+ */
+export interface TabMeta {
   id: string;
   type: TabType;
   filename: string;
   path?: string;
-  content?: string;
   isDirty: boolean;
+}
+
+/**
+ * Full tab representation including content.
+ * Only used during serialisation / deserialisation of the session and
+ * for transient operations that need both metadata + content at once.
+ */
+export interface Tab extends TabMeta {
+  content?: string;
 }
 
 export enum TabType {
