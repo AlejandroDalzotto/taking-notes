@@ -80,3 +80,13 @@ export async function migrateV1ToV2(): Promise<boolean> {
   const result = await invoke<boolean>("migrate_v1_to_v2");
   return result;
 }
+
+/**
+ * Drain and return file paths that were passed via CLI arguments on cold start
+ * (e.g. the user right-clicked a file and chose "Open with Taking Notes").
+ *
+ * This is a one-shot command — subsequent calls return an empty array.
+ */
+export async function takeCliFilePaths(): Promise<string[]> {
+  return await invoke<string[]>("take_cli_file_paths");
+}

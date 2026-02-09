@@ -1,23 +1,25 @@
 import "./globals.css";
 import { useEffect } from "react";
-// import UpdaterRunner from "@/components/updater-runner";
-// import MigrationRunner from "@/components/migration-runner";
+import UpdaterRunner from "@/components/updater-runner";
+import MigrationRunner from "@/components/migration-runner";
 import { Outlet } from "react-router";
 import { useEditorActions } from "./stores/editor";
 import AppHeader from "@/components/app-header";
 import MenuBar from "@/components/menu-bar";
 import Footer from "@/components/footer";
 import ShortcutProvider from "@/components/shortcut-provider";
-// import { useMigrationStatus } from "@/stores/migration";
+import FileDropZone from "@/components/file-drop-zone";
+import ExternalFileListener from "@/components/external-file-listener";
+import { useMigrationStatus } from "@/stores/migration";
 
 export default function RootLayout() {
   const { initialize } = useEditorActions();
-  // const migrationStatus = useMigrationStatus();
+  const migrationStatus = useMigrationStatus();
 
   useEffect(() => {
-    // if (migrationStatus === "complete") {
-    initialize();
-    // }
+    if (migrationStatus === "complete") {
+      initialize();
+    }
   }, []);
 
   return (
@@ -30,9 +32,11 @@ export default function RootLayout() {
         <Outlet />
       </main>
       <Footer />
-      {/*<UpdaterRunner />*/}
-      {/*<MigrationRunner />*/}
+      <UpdaterRunner />
+      <MigrationRunner />
       <ShortcutProvider />
+      <FileDropZone />
+      <ExternalFileListener />
     </div>
   );
 }

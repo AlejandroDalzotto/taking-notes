@@ -1,7 +1,7 @@
 import { save as tauriSave, open as tauriOpen, ask } from "@tauri-apps/plugin-dialog";
 import { create } from "zustand";
 import { DatabaseV2, FileInfo, LocalFile, SessionTab, TabMeta, TabType } from "@/lib/types";
-import { deserializeTabs, loadEditorState, openFile, saveEditorState, saveFile, serializeTabs } from "@/lib/commands";
+import { deserializeTabs, loadEditorState, openFile, saveEditorState, saveFile, serializeTabs, takeCliFilePaths } from "@/lib/commands";
 import { useShallow } from "zustand/shallow";
 
 // ---------------------------------------------------------------------------
@@ -196,6 +196,17 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
         console.error("Failed to initialize editor:", error);
         set({ isInitialized: true });
       }
+
+      // Open files passed via CLI args ("Open with" on cold start).
+      try {
+        const cliPaths = await takeCliFilePaths();
+        for (const path of cliPaths) {
+          await get().actions.openByPath(path);
+        }
+      } catch (error) {
+        console.error("Failed to open CLI file paths:", error);
+      }
+
       console.log("============= Editor initialized =============");
     },
 

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use tauri::Result;
 
+use crate::CliFilePaths;
 use crate::utils::{MAX_FILE_SIZE, atomic_write_async};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -74,6 +75,13 @@ fn extract_extension(path: &PathBuf) -> String {
         .and_then(|ext| ext.to_str())
         .unwrap_or("")
         .to_string()
+}
+
+/// Drain and return file paths that were passed via CLI arguments on cold start.
+/// Called once by the frontend during initialization.
+#[tauri::command]
+pub fn take_cli_file_paths(state: tauri::State<'_, CliFilePaths>) -> Vec<String> {
+    state.0.lock().unwrap().drain(..).collect()
 }
 
 #[tauri::command]
