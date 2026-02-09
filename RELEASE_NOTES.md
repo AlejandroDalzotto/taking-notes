@@ -1,9 +1,8 @@
-# 🎉 New version: v1.1.1
+# 🎉 New version: v1.2.0
 
 New features:
-- Improved performance on start up.
-- Now the menu bar works correctly and also supports shortcuts.
-- Files' metadata now are displayed at the bottom of the app.
+- Users can now open files by dragging and dropping them onto the app.
+- Users can now open files by selecting them from the file explorer and clicking in "open with...".
 
 ---
 
