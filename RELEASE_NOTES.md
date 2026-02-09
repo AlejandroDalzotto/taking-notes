@@ -1,6 +1,9 @@
-# 🎉 New version: v1.0.1
+# 🎉 New version: v1.1.0
 
-Minor bug fixes
+New features:
+- Improved performance on start up.
+- Now the menu bar works correctly and also supports shortcuts.
+- Files' metadata now are displayed at the bottom of the app.
 
 ---
 
