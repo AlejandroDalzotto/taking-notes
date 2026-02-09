@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Taking Notes (Dev version)",
+  "productName": "Taking Notes",
   "version": "../package.json",
   "identifier": "com.taking-notes.app",
   "build": {
