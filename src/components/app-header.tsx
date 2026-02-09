@@ -45,7 +45,7 @@ const CloseTabButton = ({ tabId }: { tabId: string }) => {
 };
 
 const TabItem = memo(function TabItem({ tab }: { tab: TabMeta }) {
-  const { openTab } = useEditorActions();
+  const { openTab, closeTab } = useEditorActions();
   const isActive = useIsActiveTab(tab.id);
   const navigate = useNavigate();
 
@@ -55,10 +55,13 @@ const TabItem = memo(function TabItem({ tab }: { tab: TabMeta }) {
         openTab(tab.id);
         navigate("/");
       }}
+      onAuxClick={() => {
+        closeTab(tab.id);
+      }}
       key={tab.id}
       className={`
-        relative flex items-center gap-2 px-3 py-1.5 rounded-md
-        min-w-25 max-w-45 shrink-0
+        relative flex items-center gap-2 px-2 py-1.5 rounded-md
+        min-w-0 max-w-48 flex-1
         ${isActive ? "bg-zinc-800 text-white shadow-sm" : "bg-transparent text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"}
         cursor-pointer transition-colors duration-100
       `}
@@ -84,7 +87,7 @@ const TabList = () => {
   return (
     <>
       {tabs.length > 0 ? (
-        <div className="flex items-center gap-0.5 overflow-x-auto custom-scrollbar px-1">
+        <div className="flex items-center gap-0.5 overflow-hidden px-1">
           {tabs.map((tab) => {
             return <TabItem tab={tab} key={tab.id} />;
           })}
