@@ -53,6 +53,30 @@ export interface Tab extends TabMeta {
   content?: string;
 }
 
+/**
+ * Metadata about a file detected at read time on the Rust side.
+ * Returned alongside the file content by the `open_file` command.
+ */
+export interface FileInfo {
+  /** Detected line-ending style: "CRLF", "LF", "Mixed", or "N/A". */
+  lineEnding: string;
+  /** Encoding used to read the file (always "UTF-8" for now). */
+  encoding: string;
+  /** On-disk file size in bytes at the moment it was read. */
+  fileSize: number;
+  /** File extension without the leading dot, e.g. "txt", "md". Empty string when none. */
+  extension: string;
+}
+
+/**
+ * Bundle returned by the `open_file` Tauri command so the frontend gets
+ * content + metadata in a single IPC round-trip.
+ */
+export interface OpenedFile {
+  content: string;
+  fileInfo: FileInfo;
+}
+
 export enum TabType {
   LOCAL = "local",
   UNTITLED = "untitled",

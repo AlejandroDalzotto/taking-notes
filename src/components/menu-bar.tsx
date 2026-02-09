@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useEditorActions } from "@/stores/editor";
+import { message } from "@tauri-apps/plugin-dialog";
+import clsx from "clsx";
 
 type DropdownItem = {
   id: string;
   text: string;
   shortcut?: string;
   onClick?: () => void;
+  available: boolean;
 };
 
 type DropdownMenuProps = {
@@ -71,6 +74,7 @@ const Menu: React.FC<DropdownMenuProps> = ({ text, items, id }) => {
             <div
               key={item.id}
               role="menuitem"
+              aria-disabled={!item.available}
               onClick={() => {
                 try {
                   item.onClick?.();
@@ -79,7 +83,11 @@ const Menu: React.FC<DropdownMenuProps> = ({ text, items, id }) => {
                   setOpen(false);
                 }
               }}
-              className="px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800 hover:text-white cursor-pointer flex justify-between items-center"
+              className={clsx(
+                "px-4 py-2 text-sm flex justify-between items-center",
+                !item.available && "opacity-50 cursor-not-allowed pointer-events-none text-neutral-400",
+                item.available && "cursor-pointer text-neutral-200 hover:bg-neutral-800 hover:text-white",
+              )}
             >
               <span>{item.text}</span>
               {item.shortcut && <span className="text-xs text-neutral-400 ml-4">{item.shortcut}</span>}
@@ -112,15 +120,16 @@ export default function MenuBar() {
   const navigate = useNavigate();
 
   const fileItems: DropdownItem[] = [
-    { id: "new", text: "New", shortcut: "Ctrl+N", onClick: addBlank },
-    { id: "open", text: "Open", shortcut: "Ctrl+O", onClick: openLocalFile },
+    { id: "new", text: "New", shortcut: "Ctrl+N", onClick: addBlank, available: true },
+    { id: "open", text: "Open", shortcut: "Ctrl+O", onClick: openLocalFile, available: true },
     {
       id: "open-recent",
       text: "Open Recent",
       shortcut: undefined,
       onClick: () => navigate("/recent-files"),
+      available: true,
     },
-    { id: "save", text: "Save", shortcut: "Ctrl+S", onClick: saveCurrentFileOnDisk },
+    { id: "save", text: "Save", shortcut: "Ctrl+S", onClick: saveCurrentFileOnDisk, available: true },
   ];
 
   const editItems: DropdownItem[] = [
@@ -136,6 +145,7 @@ export default function MenuBar() {
           // noop
         }
       },
+      available: false,
     },
     {
       id: "redo",
@@ -148,12 +158,13 @@ export default function MenuBar() {
           // noop
         }
       },
+      available: false,
     },
   ];
 
   const viewItems: DropdownItem[] = [
-    { id: "zoom-in", text: "Zoom In", onClick: () => window.dispatchEvent(new CustomEvent("zoom-in")) },
-    { id: "zoom-out", text: "Zoom Out", onClick: () => window.dispatchEvent(new CustomEvent("zoom-out")) },
+    { id: "zoom-in", text: "Zoom In", onClick: () => window.dispatchEvent(new CustomEvent("zoom-in")), available: false },
+    { id: "zoom-out", text: "Zoom Out", onClick: () => window.dispatchEvent(new CustomEvent("zoom-out")), available: false },
   ];
 
   const helpItems: DropdownItem[] = [
@@ -164,11 +175,25 @@ export default function MenuBar() {
         // open docs in a new window/tab - leave implementation simple
         window.open("https://tauri.app", "_blank", "noopener,noreferrer");
       },
+      available: false,
     },
     {
       id: "about",
       text: "About",
-      onClick: () => window.alert(`Taking Notes\n\nDesktop application\n\nVersion information is available in the app's About dialog.`),
+      onClick: () =>
+        message(
+          `
+        Taking Notes v1.1.0\n
+        Taking Notes is a simple note-taking application built with Tauri.\n
+        It allows you to create, edit, and organize your notes in a simple and intuitive way.\n
+        ©Copyright 2026 - Made by Alejandro Dalzotto
+      `,
+          {
+            title: "About Taking Notes",
+            kind: "info",
+          },
+        ),
+      available: true,
     },
   ];
 

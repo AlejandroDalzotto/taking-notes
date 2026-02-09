@@ -1,12 +1,20 @@
 import { save as tauriSave, open as tauriOpen, ask } from "@tauri-apps/plugin-dialog";
 import { create } from "zustand";
-import { DatabaseV2, LocalFile, SessionTab, TabMeta, TabType } from "@/lib/types";
+import { DatabaseV2, FileInfo, LocalFile, SessionTab, TabMeta, TabType } from "@/lib/types";
 import { deserializeTabs, loadEditorState, openFile, saveEditorState, saveFile, serializeTabs } from "@/lib/commands";
 import { useShallow } from "zustand/shallow";
 
 // ---------------------------------------------------------------------------
 // State shape
 // ---------------------------------------------------------------------------
+
+/** Default file info for untitled / in-memory documents. */
+const DEFAULT_FILE_INFO: FileInfo = {
+  lineEnding: "LF",
+  encoding: "UTF-8",
+  fileSize: 0,
+  extension: "",
+};
 
 type State = {
   /** Tab metadata only — content is NEVER stored here. */
@@ -31,6 +39,14 @@ type State = {
    * Clean local-file tabs are NOT cached — they can be re-read from disk.
    */
   contentCache: Record<string, string>;
+
+  /**
+   * File metadata (encoding, line ending, size, extension) for the
+   * currently active tab. Populated when a file is opened from disk,
+   * set to sensible defaults for untitled tabs, and cleared when no
+   * tab is active.
+   */
+  currentFileInfo: FileInfo | null;
 
   recentFiles: Record<string, LocalFile>;
   isInitialized: boolean;
@@ -100,6 +116,16 @@ function withoutKey<T>(record: Record<string, T>, key: string): Record<string, T
   return rest;
 }
 
+/**
+ * Derive a FileInfo for an untitled tab based on its filename (for the
+ * extension) while keeping sensible defaults for everything else.
+ */
+function fileInfoForUntitled(filename: string): FileInfo {
+  const dotIdx = filename.lastIndexOf(".");
+  const extension = dotIdx !== -1 ? filename.slice(dotIdx + 1) : "";
+  return { ...DEFAULT_FILE_INFO, extension };
+}
+
 // ---------------------------------------------------------------------------
 // Store
 // ---------------------------------------------------------------------------
@@ -109,6 +135,7 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
   currentTabId: null,
   activeContent: "",
   contentCache: {},
+  currentFileInfo: null,
   recentFiles: {},
   isInitialized: false,
 
@@ -128,21 +155,31 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
 
         // Load the active tab's content (from cache or from disk).
         let activeContent = "";
+        let currentFileInfo: FileInfo | null = null;
         const contentCache = { ...initialCache };
 
         if (currentTabId) {
+          const currentTab = loadedTabs.find((t) => t.id === currentTabId);
+
           if (contentCache[currentTabId] !== undefined) {
             activeContent = contentCache[currentTabId];
             delete contentCache[currentTabId]; // promote to activeContent
-          } else {
-            const currentTab = loadedTabs.find((t) => t.id === currentTabId);
-            if (currentTab?.type === TabType.LOCAL && currentTab.path) {
-              try {
-                activeContent = await openFile(currentTab.path);
-              } catch (error) {
-                console.error("Failed to load current tab content:", error);
+
+            // For cached content we derive basic metadata.
+            currentFileInfo = currentTab ? fileInfoForUntitled(currentTab.filename) : { ...DEFAULT_FILE_INFO };
+          } else if (currentTab?.type === TabType.LOCAL && currentTab.path) {
+            try {
+              const result = await openFile(currentTab.path);
+              if (result) {
+                activeContent = result.content;
+                currentFileInfo = result.fileInfo;
               }
+            } catch (error) {
+              console.error("Failed to load current tab content:", error);
             }
+          } else if (currentTab) {
+            // Untitled tab with no cached content.
+            currentFileInfo = fileInfoForUntitled(currentTab.filename);
           }
         }
 
@@ -151,6 +188,7 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
           currentTabId,
           activeContent,
           contentCache,
+          currentFileInfo,
           recentFiles: db.recentFiles,
           isInitialized: true,
         });
@@ -206,6 +244,7 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
         currentTabId: id,
         activeContent: "",
         contentCache: flushedCache,
+        currentFileInfo: { ...DEFAULT_FILE_INFO },
       });
     },
 
@@ -270,11 +309,23 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
         await saveFile(pathToSave, activeContent);
 
         const filename = pathToSave.split(/[\\/]/).pop() || "Untitled";
+        const dotIdx = filename.lastIndexOf(".");
+        const extension = dotIdx !== -1 ? filename.slice(dotIdx + 1) : "";
+
+        // Recompute file info after save to reflect the new on-disk state.
+        const prevInfo = get().currentFileInfo;
+        const updatedFileInfo: FileInfo = {
+          lineEnding: prevInfo?.lineEnding ?? "LF",
+          encoding: "UTF-8",
+          fileSize: new Blob([activeContent]).size,
+          extension,
+        };
 
         set({
           tabs: tabs.map((t) => (t.id === currentTabId ? { ...t, type: TabType.LOCAL, filename, path: pathToSave, isDirty: false } : t)),
           // Content is now on disk and clean — remove from cache if present.
           contentCache: withoutKey(contentCache, currentTabId),
+          currentFileInfo: updatedFileInfo,
           recentFiles: {
             ...recentFiles,
             [pathToSave]: {
@@ -318,22 +369,32 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
         const flushedCache = flushActiveToCache(state);
 
         let content: string;
+        let fileInfo: FileInfo;
+
         if (flushedCache[existingTab.id] !== undefined) {
           content = flushedCache[existingTab.id];
+          // Content came from cache — derive basic metadata.
+          fileInfo = fileInfoForUntitled(existingTab.filename);
         } else {
-          content = await openFile(path);
+          const result = await openFile(path);
+          content = result?.content ?? "";
+          fileInfo = result?.fileInfo ?? fileInfoForUntitled(existingTab.filename);
         }
 
         set({
           currentTabId: existingTab.id,
           activeContent: content,
           contentCache: withoutKey(flushedCache, existingTab.id),
+          currentFileInfo: fileInfo,
         });
         return;
       }
 
       try {
-        const content = await openFile(path);
+        const result = await openFile(path);
+        const content = result?.content ?? "";
+        const fileInfo = result?.fileInfo ?? { ...DEFAULT_FILE_INFO };
+
         const filename = path.split(/[\\/]/).pop() || path;
         const newId = crypto.randomUUID();
 
@@ -352,6 +413,7 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
           currentTabId: newId,
           activeContent: content,
           contentCache: flushedCache,
+          currentFileInfo: fileInfo,
           recentFiles: {
             ...recentFiles,
             [path]: {
@@ -384,17 +446,24 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
 
       // 2. Load the target tab's content: from cache → from disk → empty.
       let newContent: string;
+      let newFileInfo: FileInfo;
+
       if (flushedCache[id] !== undefined) {
         newContent = flushedCache[id];
+        // Content came from in-memory cache — derive basic metadata.
+        newFileInfo = fileInfoForUntitled(tabToOpen.filename);
       } else if (tabToOpen.type === TabType.LOCAL && tabToOpen.path) {
         try {
-          newContent = await openFile(tabToOpen.path);
+          const result = await openFile(tabToOpen.path);
+          newContent = result?.content ?? "";
+          newFileInfo = result?.fileInfo ?? fileInfoForUntitled(tabToOpen.filename);
         } catch (error) {
           console.error("Error loading file:", error);
           return;
         }
       } else {
         newContent = "";
+        newFileInfo = fileInfoForUntitled(tabToOpen.filename);
       }
 
       set({
@@ -402,6 +471,7 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
         activeContent: newContent,
         // Remove the target from cache since it's now active.
         contentCache: withoutKey(flushedCache, id),
+        currentFileInfo: newFileInfo,
       });
     },
 
@@ -454,27 +524,34 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
 
       let newCurrentTabId = freshCurrentTabId;
       let newActiveContent = freshState.activeContent;
+      let newFileInfo: FileInfo | null = freshState.currentFileInfo;
 
       if (freshCurrentTabId === id) {
         // Pick adjacent tab (prefer left, then right, then none).
         const nextTab = newTabs[closedIndex - 1] ?? newTabs[closedIndex] ?? null;
         newCurrentTabId = nextTab?.id ?? null;
 
-        if (newCurrentTabId) {
+        if (newCurrentTabId && nextTab) {
           // Load the new current tab's content.
           if (newCache[newCurrentTabId] !== undefined) {
             newActiveContent = newCache[newCurrentTabId];
-          } else if (nextTab && nextTab.type === TabType.LOCAL && nextTab.path) {
+            newFileInfo = fileInfoForUntitled(nextTab.filename);
+          } else if (nextTab.type === TabType.LOCAL && nextTab.path) {
             try {
-              newActiveContent = await openFile(nextTab.path);
+              const result = await openFile(nextTab.path);
+              newActiveContent = result?.content ?? "";
+              newFileInfo = result?.fileInfo ?? fileInfoForUntitled(nextTab.filename);
             } catch {
               newActiveContent = "";
+              newFileInfo = fileInfoForUntitled(nextTab.filename);
             }
           } else {
             newActiveContent = "";
+            newFileInfo = fileInfoForUntitled(nextTab.filename);
           }
         } else {
           newActiveContent = "";
+          newFileInfo = null;
         }
       }
 
@@ -483,6 +560,7 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
         currentTabId: newCurrentTabId,
         activeContent: newActiveContent,
         contentCache: withoutKey(newCache, newCurrentTabId ?? ""),
+        currentFileInfo: newFileInfo,
       });
       return true;
     },
@@ -504,6 +582,7 @@ const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
         currentTabId: null,
         activeContent: "",
         contentCache: flushedCache,
+        currentFileInfo: null,
       });
     },
   },
@@ -535,6 +614,14 @@ export const useCurrentTabMeta = () =>
       return state.tabs.find((t) => t.id === state.currentTabId) ?? null;
     }),
   );
+
+/**
+ * File metadata (encoding, line ending, size, extension) for the currently
+ * active tab.  Used by the footer's status cells.
+ *
+ * Returns `null` when no tab is open.
+ */
+export const useCurrentFileInfo = () => useEditorStore(useShallow((state) => state.currentFileInfo));
 
 /**
  * Tab metadata list for the tab bar. Since `setContent` never modifies

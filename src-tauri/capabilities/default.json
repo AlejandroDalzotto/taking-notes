@@ -2,9 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "enables the default permissions",
-  "windows": [
-    "main"
-  ],
+  "windows": ["main"],
   "permissions": [
     "core:default",
     "opener:allow-default-urls",
@@ -22,10 +20,8 @@
     "window-state:default",
     "dialog:allow-ask",
     "dialog:allow-open",
-    "dialog:allow-save"
+    "dialog:allow-save",
+    "dialog:allow-message"
   ],
-  "platforms": [
-    "windows",
-    "linux"
-  ]
+  "platforms": ["windows", "linux"]
 }

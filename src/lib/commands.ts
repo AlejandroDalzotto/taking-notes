@@ -1,19 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
-import { DatabaseV2, SessionTab, TabMeta, TabType } from "@/lib/types";
+import { DatabaseV2, OpenedFile, SessionTab, TabMeta, TabType } from "@/lib/types";
 
 export async function saveFile(path: string, content: string) {
   const message = await invoke("save_file", { entry: { path, content } });
   return message;
 }
 
-export async function openFile(path: string) {
-  const content = await invoke<string>("open_file", { path });
-
-  if (!content) {
-    return "";
-  }
-
-  return content;
+export async function openFile(path: string): Promise<OpenedFile | null> {
+  const result = await invoke<OpenedFile | null>("open_file", { path });
+  return result;
 }
 
 export async function loadEditorState(): Promise<DatabaseV2> {
