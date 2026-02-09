@@ -3,11 +3,13 @@ import { useRecentFiles, useEditorActions } from "@/stores/editor";
 import { useEffect, useMemo, useState } from "react";
 import { FolderSearch, FileText, Clock } from "lucide-react";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { useNavigate } from "react-router";
 
 export default function RecentFilesPage() {
   const recentFiles = useRecentFiles();
   const { openByPath, resetCurrent } = useEditorActions();
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
 
   const filteredNotes = useMemo(() => {
     const files = Object.values(recentFiles);
@@ -65,6 +67,7 @@ export default function RecentFilesPage() {
             <div
               onClick={() => {
                 openByPath(note.path);
+                navigate("/");
               }}
               className="flex cursor-pointer justify-between items-center py-3 px-3 hover:bg-white/5 rounded-md mb-1 group transition-colors"
               key={note.path}

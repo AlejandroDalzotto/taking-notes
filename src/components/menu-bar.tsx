@@ -121,7 +121,16 @@ export default function MenuBar() {
 
   const fileItems: DropdownItem[] = [
     { id: "new", text: "New", shortcut: "Ctrl+N", onClick: addBlank, available: true },
-    { id: "open", text: "Open", shortcut: "Ctrl+O", onClick: openLocalFile, available: true },
+    {
+      id: "open",
+      text: "Open",
+      shortcut: "Ctrl+O",
+      onClick: () => {
+        openLocalFile();
+        navigate("/");
+      },
+      available: true,
+    },
     {
       id: "open-recent",
       text: "Open Recent",
