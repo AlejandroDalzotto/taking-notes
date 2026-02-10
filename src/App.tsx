@@ -20,7 +20,7 @@ export default function RootLayout() {
     if (migrationStatus === "complete") {
       initialize();
     }
-  }, []);
+  }, [migrationStatus]);
 
   return (
     <div className="font-sans antialiased grid grid-rows-[min-content_1fr_min-content] w-screen relative h-screen text-neutral-50 bg-neutral-950">
