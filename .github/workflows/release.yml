@@ -36,7 +36,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: `v${process.env.PACKAGE_VERSION}`,
-              name: `Taking Notes v${process.env.PACKAGE_VERSION}`,
+              name: `v${process.env.PACKAGE_VERSION}`,
               body: body,
               draft: true,
               prerelease: false

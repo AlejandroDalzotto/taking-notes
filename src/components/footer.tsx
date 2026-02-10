@@ -52,7 +52,7 @@ export default function Footer() {
 
       {/* Right side — app version */}
       <div className="flex items-center shrink-0">
-        <FooterCell>v1.2.0</FooterCell>
+        <FooterCell>v1.2.1</FooterCell>
       </div>
     </footer>
   );

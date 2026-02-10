@@ -1,8 +1,6 @@
-# 🎉 New version: v1.2.0
+# 🎉 New version: v1.2.1
 
-New features:
-- Users can now open files by dragging and dropping them onto the app.
-- Users can now open files by selecting them from the file explorer and clicking in "open with...".
+- Fix bug with state initialization.
 
 ---
 
