@@ -2,12 +2,11 @@
 
 ![Tauri](https://img.shields.io/badge/Tauri-24C8D8?style=flat&logo=tauri&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
 
 A desktop note-taking app built with Tauri and React. Designed to bring modern editing features to a lightweight, fast, and always-available experience.
 
-<img src="taking-notes.png" alt="Taking Notes demo" />
+<img src="taking-notes.png" alt="Taking Notes demo" align="center" />
 
 ## Features
 
