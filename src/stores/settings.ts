@@ -1,42 +1,56 @@
-import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-enum AppTheme {
-  LIGHT = "light",
-  DARK = "dark",
-}
-
-const DEFAULT_THEME = AppTheme.DARK;
+export type AppTheme = "light" | "dark" | "cream";
+export const THEMES: { id: AppTheme; label: string; color: string }[] = [
+  { id: "light", label: "Light", color: "#f7f8fa" },
+  { id: "dark", label: "Dark", color: "#202123" },
+  { id: "cream", label: "Cream", color: "#f2ecdf" },
+];
 const DEFAULT_EDITOR_FONT_SIZE = 16;
+const clampFontSize = (size: number) => Math.min(32, Math.max(12, size));
 
 type State = {
   theme: AppTheme;
   editorFontSize: number;
+  sidebarOpen: boolean;
   actions: {
-    loadSettings: () => Promise<void>;
     setTheme: (theme: AppTheme) => void;
-    increaseEditorFontSize: (fontSize: number) => void;
-    decreaseEditorFontSize: (fontSize: number) => void;
+    toggleSidebar: () => void;
+    increaseEditorFontSize: (amount: number) => void;
+    decreaseEditorFontSize: (amount: number) => void;
     resetFontSize: () => void;
   };
 };
 
-const useSettingsStore = create<State>()((set) => ({
-  theme: DEFAULT_THEME,
+export const useSettingsStore = create<State>()(persist((set) => ({
+  theme: "dark",
   editorFontSize: DEFAULT_EDITOR_FONT_SIZE,
+  sidebarOpen: true,
   actions: {
-    loadSettings: async () => {
-      // Load settings from local storage or API
-      const settings = await invoke<{ theme: AppTheme; fontSize: number }>("get_settings");
-      set({ theme: settings.theme ?? DEFAULT_THEME, editorFontSize: settings.fontSize ?? DEFAULT_EDITOR_FONT_SIZE });
-    },
     setTheme: (theme) => set({ theme }),
-    increaseEditorFontSize: (fontSize) => set((state) => ({ editorFontSize: state.editorFontSize + fontSize })),
-    decreaseEditorFontSize: (fontSize) => set((state) => ({ editorFontSize: state.editorFontSize - fontSize })),
+    toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+    increaseEditorFontSize: (amount) => set((state) => ({ editorFontSize: clampFontSize(state.editorFontSize + amount) })),
+    decreaseEditorFontSize: (amount) => set((state) => ({ editorFontSize: clampFontSize(state.editorFontSize - amount) })),
     resetFontSize: () => set({ editorFontSize: DEFAULT_EDITOR_FONT_SIZE }),
+  },
+}), {
+  name: "taking-notes-settings",
+  version: 1,
+  partialize: ({ theme, editorFontSize, sidebarOpen }) => ({ theme, editorFontSize, sidebarOpen }),
+  merge: (persisted, current) => {
+    const saved = persisted as Partial<State> | null;
+    return {
+      ...current,
+      theme: THEMES.some((theme) => theme.id === saved?.theme) ? saved!.theme! : current.theme,
+      editorFontSize: typeof saved?.editorFontSize === "number" && Number.isFinite(saved.editorFontSize)
+        ? clampFontSize(saved.editorFontSize) : current.editorFontSize,
+      sidebarOpen: typeof saved?.sidebarOpen === "boolean" ? saved.sidebarOpen : current.sidebarOpen,
+    };
   },
 }));
 
 export const useFontSize = () => useSettingsStore((state) => state.editorFontSize);
 export const useTheme = () => useSettingsStore((state) => state.theme);
+export const useSidebarOpen = () => useSettingsStore((state) => state.sidebarOpen);
 export const useSettingsActions = () => useSettingsStore((state) => state.actions);

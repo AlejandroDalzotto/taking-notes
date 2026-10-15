@@ -13,6 +13,7 @@
     "windows": [
       {
         "decorations": false,
+        "dragDropEnabled": true,
         "title": "Taking Notes",
         "resizable": true,
         "fullscreen": false,

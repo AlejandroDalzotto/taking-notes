@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use std::io::{self, Read};
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use tauri::Result;
@@ -70,18 +71,19 @@ fn detect_line_ending(content: &str) -> &'static str {
 }
 
 /// Extract the file extension (without the dot) from a path.
-fn extract_extension(path: &PathBuf) -> String {
+fn extract_extension(path: &Path) -> String {
     path.extension()
         .and_then(|ext| ext.to_str())
         .unwrap_or("")
         .to_string()
 }
 
-/// Drain and return file paths that were passed via CLI arguments on cold start.
-/// Called once by the frontend during initialization.
+/// Atomically drain pending paths from cold start and all subsequent launches.
+/// Register the `open-files` listener before the initial drain, then drain on
+/// every notification. Event payloads are not file paths.
 #[tauri::command]
 pub fn take_cli_file_paths(state: tauri::State<'_, CliFilePaths>) -> Vec<String> {
-    state.0.lock().unwrap().drain(..).collect()
+    state.take()
 }
 
 #[tauri::command]
@@ -96,38 +98,136 @@ pub async fn save_file(entry: Entry) -> Result<Option<String>> {
     Ok(Some(format!("File saved at {}", path.to_string_lossy())))
 }
 
-#[tauri::command]
-pub async fn open_file(path: PathBuf) -> Result<Option<OpenedFile>> {
-    // Check if the file exists before doing anything else.
-    let metadata = match tokio::fs::metadata(&path).await {
-        Ok(m) => m,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(e) => return Err(tauri::Error::Io(e)),
-    };
+fn too_large() -> io::Error {
+    io::Error::new(
+        io::ErrorKind::InvalidData,
+        format!(
+            "File is too large. The maximum supported size is {} MB.",
+            MAX_FILE_SIZE / (1024 * 1024)
+        ),
+    )
+}
 
-    // Guard against accidentally opening huge files.
-    let size = metadata.len();
-    if size > MAX_FILE_SIZE {
-        return Err(tauri::Error::Io(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            format!(
-                "File is too large ({:.1} MB). The maximum supported size is {:.0} MB.",
-                size as f64 / (1024.0 * 1024.0),
-                MAX_FILE_SIZE as f64 / (1024.0 * 1024.0),
-            ),
-        )));
+fn read_bounded(reader: impl Read) -> io::Result<String> {
+    let mut bytes = Vec::new();
+    reader.take(MAX_FILE_SIZE + 1).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > MAX_FILE_SIZE {
+        return Err(too_large());
     }
+    String::from_utf8(bytes).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+}
 
-    let content = tokio::fs::read_to_string(&path)
-        .await
-        .map_err(|e| tauri::Error::Io(e))?;
-
+fn open_file_sync(path: &Path) -> io::Result<Option<OpenedFile>> {
+    // Inspect and read the same handle, not a path that can be replaced between
+    // metadata and reading. Also cap the read if the file grows after metadata.
+    // Reject known directories/devices before opening: opening a FIFO can
+    // block before handle metadata is available. Recheck the opened handle too.
+    match std::fs::metadata(path) {
+        Ok(metadata) if !metadata.is_file() => {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Path is not a regular file",
+            ));
+        }
+        Ok(_) => {}
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(e),
+    }
+    let file = match std::fs::File::open(path) {
+        Ok(file) => file,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(e),
+    };
+    let metadata = file.metadata()?;
+    if !metadata.is_file() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Path is not a regular file",
+        ));
+    }
+    if metadata.len() > MAX_FILE_SIZE {
+        return Err(too_large());
+    }
+    let content = read_bounded(file)?;
     let file_info = FileInfo {
         line_ending: detect_line_ending(&content).to_string(),
         encoding: "UTF-8".to_string(),
-        file_size: size,
-        extension: extract_extension(&path),
+        file_size: content.len() as u64,
+        extension: extract_extension(path),
     };
-
     Ok(Some(OpenedFile { content, file_info }))
+}
+
+#[tauri::command]
+pub async fn open_file(path: PathBuf) -> Result<Option<OpenedFile>> {
+    tokio::task::spawn_blocking(move || open_file_sync(&path))
+        .await
+        .map_err(|e| tauri::Error::Io(io::Error::other(e)))?
+        .map_err(tauri::Error::Io)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detects_line_endings() {
+        for (content, expected) in [
+            ("", "N/A"),
+            ("one\rtwo", "N/A"),
+            ("one\ntwo\n", "LF"),
+            ("one\r\ntwo\r\n", "CRLF"),
+            ("one\r\ntwo\n", "Mixed"),
+        ] {
+            assert_eq!(detect_line_ending(content), expected);
+        }
+    }
+
+    #[test]
+    fn reads_content_and_metadata_and_handles_missing_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("note.md");
+        assert!(open_file_sync(&path).unwrap().is_none());
+        std::fs::write(&path, "héllo\r\n").unwrap();
+        let opened = open_file_sync(&path).unwrap().unwrap();
+        assert_eq!(opened.content, "héllo\r\n");
+        assert_eq!(opened.file_info.file_size, "héllo\r\n".len() as u64);
+        assert_eq!(opened.file_info.line_ending, "CRLF");
+        assert_eq!(opened.file_info.extension, "md");
+        assert_eq!(opened.file_info.encoding, "UTF-8");
+        assert!(open_file_sync(dir.path()).is_err());
+    }
+
+    #[test]
+    fn rejects_non_utf8_and_oversized_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("invalid.txt");
+        std::fs::write(&path, [0xff]).unwrap();
+        assert_eq!(
+            open_file_sync(&path).unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
+        std::fs::File::create(&path)
+            .unwrap()
+            .set_len(MAX_FILE_SIZE + 1)
+            .unwrap();
+        assert_eq!(
+            open_file_sync(&path).unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
+    }
+
+    #[test]
+    fn read_limit_is_enforced_independently_of_metadata() {
+        assert_eq!(
+            read_bounded(io::repeat(b'x').take(MAX_FILE_SIZE))
+                .unwrap()
+                .len() as u64,
+            MAX_FILE_SIZE
+        );
+        assert_eq!(
+            read_bounded(io::repeat(b'x')).unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
+    }
 }

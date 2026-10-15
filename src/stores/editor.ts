@@ -1,14 +1,9 @@
-import { save as tauriSave, open as tauriOpen, ask } from "@tauri-apps/plugin-dialog";
+import { save as tauriSave, open as tauriOpen, message } from "@tauri-apps/plugin-dialog";
 import { create } from "zustand";
-import { DatabaseV2, FileInfo, LocalFile, SessionTab, TabMeta, TabType } from "@/lib/types";
-import { deserializeTabs, loadEditorState, openFile, saveEditorState, saveFile, serializeTabs, takeCliFilePaths } from "@/lib/commands";
+import { DatabaseV2, FileInfo, LocalFile, OpenedFile, TabMeta, TabType } from "@/lib/types";
+import { deserializeTabs, loadEditorState, openFile, saveEditorState, saveFile, serializeTabs } from "@/lib/commands";
 import { useShallow } from "zustand/shallow";
 
-// ---------------------------------------------------------------------------
-// State shape
-// ---------------------------------------------------------------------------
-
-/** Default file info for untitled / in-memory documents. */
 const DEFAULT_FILE_INFO: FileInfo = {
   lineEnding: "LF",
   encoding: "UTF-8",
@@ -17,44 +12,21 @@ const DEFAULT_FILE_INFO: FileInfo = {
 };
 
 type State = {
-  /** Tab metadata only — content is NEVER stored here. */
+  /** Metadata only; document content never lives in the tab list. */
   tabs: TabMeta[];
-
-  /** ID of the currently active tab (null when no tab is open). */
   currentTabId: string | null;
-
-  /**
-   * Content of the currently active tab.
-   * This is the ONLY piece of state that `setContent` touches,
-   * making every keystroke an O(1) state update instead of cloning
-   * the entire `tabs` array.
-   */
+  /** Keystrokes update only this slice after the first dirty-flag transition. */
   activeContent: string;
-
-  /**
-   * Content cache for inactive tabs whose data must be preserved:
-   *  - dirty tabs (unsaved edits)
-   *  - untitled tabs (no backing file)
-   *
-   * Clean local-file tabs are NOT cached — they can be re-read from disk.
-   */
+  /** Inactive dirty/untitled documents; clean local files can be read from disk. */
   contentCache: Record<string, string>;
-
-  /**
-   * File metadata (encoding, line ending, size, extension) for the
-   * currently active tab. Populated when a file is opened from disk,
-   * set to sensible defaults for untitled tabs, and cleared when no
-   * tab is active.
-   */
   currentFileInfo: FileInfo | null;
-
   recentFiles: Record<string, LocalFile>;
+  /** True once initialization finishes, including a failed attempt. */
   isInitialized: boolean;
+  /** Sticky load failure: dismissing the banner must not unlock session writes. */
+  initializationError: string | null;
+  editorError: string | null;
 };
-
-// ---------------------------------------------------------------------------
-// Actions
-// ---------------------------------------------------------------------------
 
 type Actions = {
   initialize: () => Promise<void>;
@@ -68,556 +40,468 @@ type Actions = {
   closeTab: (id: string, options?: { skipConfirmation?: boolean }) => Promise<boolean>;
   closeCurrentTab: () => Promise<boolean>;
   resetCurrent: () => void;
+  dismissError: () => void;
 };
 
-// ---------------------------------------------------------------------------
-// Helpers (pure functions, no side-effects)
-// ---------------------------------------------------------------------------
-
-/**
- * Flush the active tab's content into the content cache so it isn't lost
- * when we switch away from it.
- *
- * Returns a **new** cache object (never mutates the original).
- * Only caches when the tab actually needs it (dirty or untitled).
- */
-function flushActiveToCache(state: Pick<State, "currentTabId" | "activeContent" | "contentCache" | "tabs">): Record<string, string> {
-  const { currentTabId, activeContent, contentCache, tabs } = state;
-  if (!currentTabId) return contentCache;
-
-  const currentTab = tabs.find((t) => t.id === currentTabId);
-  if (!currentTab) return contentCache;
-
-  if (currentTab.isDirty || currentTab.type === TabType.UNTITLED) {
-    return { ...contentCache, [currentTabId]: activeContent };
+function flushActiveToCache(state: State): Record<string, string> {
+  const tab = state.tabs.find((t) => t.id === state.currentTabId);
+  if (tab && (tab.isDirty || tab.type === TabType.UNTITLED)) {
+    return { ...state.contentCache, [tab.id]: state.activeContent };
   }
-
-  // Clean local file — no need to cache, can be re-read from disk.
-  return contentCache;
+  return state.contentCache;
 }
 
-/**
- * Build a complete id→content map that covers EVERY tab whose content we
- * currently hold in memory (active + cached). Used for persistence.
- */
-function buildContentMap(state: Pick<State, "currentTabId" | "activeContent" | "contentCache">): Record<string, string> {
-  const map: Record<string, string> = { ...state.contentCache };
-  if (state.currentTabId) {
-    map[state.currentTabId] = state.activeContent;
-  }
+function buildContentMap(state: State): Record<string, string> {
+  const map = { ...state.contentCache };
+  if (state.currentTabId) map[state.currentTabId] = state.activeContent;
   return map;
 }
 
-/**
- * Remove an entry from a record, returning a shallow copy without the key.
- */
 function withoutKey<T>(record: Record<string, T>, key: string): Record<string, T> {
   const { [key]: _, ...rest } = record;
   return rest;
 }
 
-/**
- * Derive a FileInfo for an untitled tab based on its filename (for the
- * extension) while keeping sensible defaults for everything else.
- */
-function fileInfoForUntitled(filename: string): FileInfo {
+function fileInfoForContent(filename: string, content: string): FileInfo {
   const dotIdx = filename.lastIndexOf(".");
-  const extension = dotIdx !== -1 ? filename.slice(dotIdx + 1) : "";
-  return { ...DEFAULT_FILE_INFO, extension };
+  const hasCRLF = content.includes("\r\n");
+  const hasLF = content.replace(/\r\n/g, "").includes("\n");
+  return {
+    encoding: "UTF-8",
+    lineEnding: hasCRLF ? (hasLF ? "Mixed" : "CRLF") : hasLF ? "LF" : "N/A",
+    fileSize: new Blob([content]).size,
+    extension: dotIdx !== -1 ? filename.slice(dotIdx + 1) : "",
+  };
 }
 
-// ---------------------------------------------------------------------------
-// Store
-// ---------------------------------------------------------------------------
+function tabContent(state: State, tab: TabMeta): string {
+  if (state.currentTabId === tab.id) return state.activeContent;
+  const cached = state.contentCache[tab.id];
+  if (cached !== undefined) return cached;
+  if (tab.type === TabType.UNTITLED && !tab.isDirty) return "";
+  throw new Error(`Content for "${tab.filename}" is unavailable; the document was not saved.`);
+}
 
-const useEditorStore = create<State & { actions: Actions }>((set, get) => ({
-  tabs: [],
-  currentTabId: null,
-  activeContent: "",
-  contentCache: {},
-  currentFileInfo: null,
-  recentFiles: {},
-  isInitialized: false,
+export const useEditorStore = create<State & { actions: Actions }>((set, get) => {
+  let initialization: Promise<void> | undefined;
+  let sessionLoaded = false;
+  let navigationRequest = 0;
+  let revision = 0;
+  let writeQueue: Promise<unknown> = Promise.resolve();
+  const editRevisions = new Map<string, number>();
+  const fileInfoCache = new Map<string, FileInfo>();
+  const reads = new Map<string, Promise<OpenedFile>>();
+  const savingPaths = new Map<string, Promise<void>>();
+  const pathRevisions = new Map<string, number>();
+  const closes = new Map<string, Promise<boolean>>();
 
-  actions: {
-    // -----------------------------------------------------------------------
-    // Lifecycle
-    // -----------------------------------------------------------------------
+  const update = (next: Partial<State>) => {
+    revision++;
+    set(next);
+  };
+  const reportError = (context: string, error: unknown): string => {
+    const detail = error instanceof Error ? error.message : String(error);
+    const text = `${context}: ${detail}`;
+    set({ editorError: text });
+    return text;
+  };
+  const enqueueWrite = <T,>(operation: () => Promise<T>): Promise<T> => {
+    const result = writeQueue.then(operation);
+    // A rejected operation must reach its caller, but must not poison later writes.
+    writeQueue = result.catch(() => undefined);
+    return result;
+  };
+  const readFile = (path: string): Promise<OpenedFile> => {
+    const pending = reads.get(path);
+    if (pending) return pending;
+    const result = (async () => {
+      for (;;) {
+        // A read that overlaps an atomic save must observe the replacement, not
+        // the old file (or a missing file in an in-flight Save As).
+        const pendingSave = savingPaths.get(path);
+        if (pendingSave) await pendingSave;
+        const before = pathRevisions.get(path) ?? 0;
+        const file = await openFile(path);
+        const overlappingSave = savingPaths.get(path);
+        if (overlappingSave) await overlappingSave;
+        if (before !== (pathRevisions.get(path) ?? 0)) continue;
+        if (!file) throw new Error(`File not found: ${path}`);
+        return file;
+      }
+    })();
+    reads.set(path, result);
+    void result.then(
+      () => { if (reads.get(path) === result) reads.delete(path); },
+      () => { if (reads.get(path) === result) reads.delete(path); },
+    );
+    return result;
+  };
+  const prepareTab = async (id: string): Promise<OpenedFile | null> => {
+    const state = get();
+    const tab = state.tabs.find((t) => t.id === id);
+    if (!tab) return null;
+    if (state.currentTabId === id || state.contentCache[id] !== undefined || tab.type === TabType.UNTITLED) {
+      const content = tabContent(state, tab);
+      return { content, fileInfo: fileInfoCache.get(id) ?? fileInfoForContent(tab.filename, content) };
+    }
+    if (tab.isDirty) throw new Error(`Unsaved content for "${tab.filename}" is unavailable.`);
+    if (!tab.path) throw new Error(`File path for "${tab.filename}" is unavailable.`);
+    return readFile(tab.path);
+  };
+  const activateTab = async (id: string, request: number): Promise<void> => {
+    if (request !== navigationRequest || get().currentTabId === id) return;
+    const originalTab = get().tabs.find((t) => t.id === id);
+    const prepared = await prepareTab(id);
+    // Never revive a closed tab or let an older read win a newer selection.
+    const state = get();
+    const tab = state.tabs.find((t) => t.id === id);
+    if (!prepared || !tab || request !== navigationRequest || tab.path !== originalTab?.path) return;
+    if (state.currentTabId === id) return;
+    const cache = flushActiveToCache(state);
+    const content = cache[id] ?? prepared.content;
+    const fileInfo = cache[id] !== undefined ? fileInfoCache.get(id) ?? prepared.fileInfo : prepared.fileInfo;
+    fileInfoCache.set(id, fileInfo);
+    update({
+      currentTabId: id,
+      activeContent: content,
+      contentCache: withoutKey(cache, id),
+      currentFileInfo: fileInfo,
+    });
+  };
 
-    initialize: async () => {
-      try {
-        const db = await loadEditorState();
-
-        const { tabs: loadedTabs, contentCache: initialCache } =
-          db.session.tabs.length > 0 ? deserializeTabs(db.session.tabs) : { tabs: [], contentCache: {} };
-
-        const currentTabId = (loadedTabs.find((t) => t.id === db.session.currentTabId) ? db.session.currentTabId : null) ?? null;
-
-        // Load the active tab's content (from cache or from disk).
-        let activeContent = "";
-        let currentFileInfo: FileInfo | null = null;
-        const contentCache = { ...initialCache };
-
-        if (currentTabId) {
-          const currentTab = loadedTabs.find((t) => t.id === currentTabId);
-
-          if (contentCache[currentTabId] !== undefined) {
-            activeContent = contentCache[currentTabId];
-            delete contentCache[currentTabId]; // promote to activeContent
-
-            // For cached content we derive basic metadata.
-            currentFileInfo = currentTab ? fileInfoForUntitled(currentTab.filename) : { ...DEFAULT_FILE_INFO };
-          } else if (currentTab?.type === TabType.LOCAL && currentTab.path) {
-            try {
-              const result = await openFile(currentTab.path);
-              if (result) {
-                activeContent = result.content;
-                currentFileInfo = result.fileInfo;
-              }
-            } catch (error) {
-              console.error("Failed to load current tab content:", error);
-            }
-          } else if (currentTab) {
-            // Untitled tab with no cached content.
-            currentFileInfo = fileInfoForUntitled(currentTab.filename);
-          }
-        }
-
-        set({
-          tabs: loadedTabs,
-          currentTabId,
-          activeContent,
-          contentCache,
-          currentFileInfo,
-          recentFiles: db.recentFiles,
-          isInitialized: true,
+  // Save a specific document, not whichever tab happens to be active after a dialog.
+  const saveTab = (id: string): Promise<boolean> => enqueueWrite(async () => {
+    let reservedPath: string | undefined;
+    let finishSave: (() => void) | undefined;
+    try {
+      await get().actions.initialize();
+      let tab = get().tabs.find((t) => t.id === id);
+      if (!tab) return false;
+      let path = tab.path;
+      if (tab.type === TabType.UNTITLED) {
+        const selected = await tauriSave({
+          defaultPath: tab.filename === "untitled" ? "Untitled" : tab.filename,
+          filters: [
+            { name: "Text Files", extensions: ["txt"] },
+            { name: "All Files", extensions: ["*"] },
+          ],
         });
-      } catch (error) {
-        console.error("Failed to initialize editor:", error);
-        set({ isInitialized: true });
+        if (!selected) return false;
+        path = selected;
       }
-
-      // Open files passed via CLI args ("Open with" on cold start).
-      try {
-        const cliPaths = await takeCliFilePaths();
-        for (const path of cliPaths) {
-          await get().actions.openByPath(path);
-        }
-      } catch (error) {
-        console.error("Failed to open CLI file paths:", error);
-      }
-
-      console.log("============= Editor initialized =============");
-    },
-
-    persistSession: async () => {
       const state = get();
-      const { tabs, recentFiles, currentTabId } = state;
-
-      const contentMap = buildContentMap(state);
-      const sessionTabs: SessionTab[] = serializeTabs(tabs, contentMap);
-
-      const db: DatabaseV2 = {
-        recentFiles,
-        session: {
-          tabs: sessionTabs,
-          currentTabId: currentTabId ?? undefined,
-        },
-        schemaVersion: "V2",
-      };
-
-      try {
-        await saveEditorState(db);
-      } catch (error) {
-        console.error("Failed to persist session:", error);
+      tab = state.tabs.find((t) => t.id === id);
+      if (!tab) return false;
+      if (!path) throw new Error("No file path was selected.");
+      if (state.tabs.some((t) => t.id !== id && t.path === path)) {
+        throw new Error("That file is already open in another tab. Choose a different path.");
       }
-    },
+      if (!tab.isDirty && tab.type === TabType.LOCAL && state.currentTabId !== id) return true;
+      const content = tabContent(state, tab);
+      const savedRevision = editRevisions.get(id) ?? 0;
+      reservedPath = path;
+      savingPaths.set(path, new Promise<void>((resolve) => { finishSave = resolve; }));
+      await saveFile(path, content);
+      pathRevisions.set(path, (pathRevisions.get(path) ?? 0) + 1);
 
-    // -----------------------------------------------------------------------
-    // Tab creation
-    // -----------------------------------------------------------------------
-
-    addBlank: () => {
-      const id = crypto.randomUUID();
-      const blank: TabMeta = {
-        id,
-        type: TabType.UNTITLED,
-        isDirty: false,
-        filename: "untitled",
-        path: undefined,
-      };
-
-      const state = get();
-      const flushedCache = flushActiveToCache(state);
-
-      set({
-        tabs: [...state.tabs, blank],
-        currentTabId: id,
-        activeContent: "",
-        contentCache: flushedCache,
-        currentFileInfo: { ...DEFAULT_FILE_INFO },
+      const fresh = get();
+      if (!fresh.tabs.some((t) => t.id === id)) return false;
+      const filename = path.split(/[\\/]/).pop() || "Untitled";
+      const isDirty = (editRevisions.get(id) ?? 0) !== savedRevision;
+      const fileInfo = fileInfoForContent(filename, content);
+      fileInfoCache.set(id, fileInfo);
+      // All slices come from fresh state. Edits made during the write stay dirty/cached.
+      update({
+        tabs: fresh.tabs.map((t) => t.id === id ? { ...t, type: TabType.LOCAL, filename, path, isDirty } : t),
+        contentCache: isDirty ? fresh.contentCache : withoutKey(fresh.contentCache, id),
+        currentFileInfo: fresh.currentTabId === id ? fileInfo : fresh.currentFileInfo,
+        recentFiles: { ...fresh.recentFiles, [path]: { id, filename, path, modified: Date.now() } },
       });
-    },
+      return !isDirty;
+    } catch (error) {
+      reportError("Unable to save file", error);
+      return false;
+    } finally {
+      if (reservedPath) savingPaths.delete(reservedPath);
+      finishSave?.();
+    }
+  });
 
-    // -----------------------------------------------------------------------
-    // Content editing — the hot path
-    // -----------------------------------------------------------------------
-
-    /**
-     * O(1) content update.
-     *
-     * - On the very first edit (isDirty=false → true) we do a single
-     *   `tabs.map()` to flip the dirty flag. After that every subsequent
-     *   keystroke only touches `activeContent` — the `tabs` array reference
-     *   stays the same, so the tab bar never re-renders from typing.
-     */
-    setContent: (content: string) => {
-      const { currentTabId, tabs } = get();
-      if (!currentTabId) return;
-
-      const tab = tabs.find((t) => t.id === currentTabId);
-      if (!tab) return;
-
-      if (tab.isDirty) {
-        // Hot path: only update the isolated content string.
-        set({ activeContent: content });
-      } else {
-        // First edit: flip isDirty (one-time O(n) on the tabs array).
-        set({
-          activeContent: content,
-          tabs: tabs.map((t) => (t.id === currentTabId ? { ...t, isDirty: true } : t)),
-        });
-      }
-    },
-
-    // -----------------------------------------------------------------------
-    // File saving
-    // -----------------------------------------------------------------------
-
-    saveCurrentFileOnDisk: async () => {
-      const { currentTabId, tabs, activeContent, recentFiles, contentCache } = get();
-      if (!currentTabId) return;
-
-      const currentTab = tabs.find((t) => t.id === currentTabId);
-      if (!currentTab) return;
-
-      try {
-        let pathToSave = currentTab.path;
-
-        if (currentTab.type === TabType.UNTITLED) {
-          const selectedPath = await tauriSave({
-            defaultPath: "Untitled",
-            filters: [
-              { name: "Text Files", extensions: ["txt"] },
-              { name: "All Files", extensions: ["*"] },
-            ],
-          });
-          if (!selectedPath) return;
-          pathToSave = selectedPath;
-        }
-
-        if (!pathToSave) return;
-        await saveFile(pathToSave, activeContent);
-
-        const filename = pathToSave.split(/[\\/]/).pop() || "Untitled";
-        const dotIdx = filename.lastIndexOf(".");
-        const extension = dotIdx !== -1 ? filename.slice(dotIdx + 1) : "";
-
-        // Recompute file info after save to reflect the new on-disk state.
-        const prevInfo = get().currentFileInfo;
-        const updatedFileInfo: FileInfo = {
-          lineEnding: prevInfo?.lineEnding ?? "LF",
-          encoding: "UTF-8",
-          fileSize: new Blob([activeContent]).size,
-          extension,
-        };
-
-        set({
-          tabs: tabs.map((t) => (t.id === currentTabId ? { ...t, type: TabType.LOCAL, filename, path: pathToSave, isDirty: false } : t)),
-          // Content is now on disk and clean — remove from cache if present.
-          contentCache: withoutKey(contentCache, currentTabId),
-          currentFileInfo: updatedFileInfo,
-          recentFiles: {
-            ...recentFiles,
-            [pathToSave]: {
-              id: currentTabId,
-              filename,
-              path: pathToSave,
-              modified: Date.now(),
-            },
-          },
-        });
-      } catch (error) {
-        console.error("Error saving file:", error);
-      }
-    },
-
-    // -----------------------------------------------------------------------
-    // File opening
-    // -----------------------------------------------------------------------
-
-    openLocalFile: async () => {
-      const path = await tauriOpen({
-        title: "Open File",
-        filters: [
-          {
-            name: "Text based files",
-            extensions: ["txt", "md", "json", "html", "css", "js", "ts", "csv", "py", "rs"],
-          },
-        ],
-      });
-      if (!path) return;
-      await get().actions.openByPath(path);
-    },
-
-    openByPath: async (path: string) => {
-      const state = get();
-      const { tabs, recentFiles } = state;
-      const existingTab = tabs.find((t) => t.path === path);
-
-      if (existingTab) {
-        // Tab already open — switch to it.
-        const flushedCache = flushActiveToCache(state);
-
-        let content: string;
-        let fileInfo: FileInfo;
-
-        if (flushedCache[existingTab.id] !== undefined) {
-          content = flushedCache[existingTab.id];
-          // Content came from cache — derive basic metadata.
-          fileInfo = fileInfoForUntitled(existingTab.filename);
-        } else {
-          const result = await openFile(path);
-          content = result?.content ?? "";
-          fileInfo = result?.fileInfo ?? fileInfoForUntitled(existingTab.filename);
-        }
-
-        set({
-          currentTabId: existingTab.id,
-          activeContent: content,
-          contentCache: withoutKey(flushedCache, existingTab.id),
-          currentFileInfo: fileInfo,
-        });
-        return;
-      }
-
-      try {
-        const result = await openFile(path);
-        const content = result?.content ?? "";
-        const fileInfo = result?.fileInfo ?? { ...DEFAULT_FILE_INFO };
-
-        const filename = path.split(/[\\/]/).pop() || path;
-        const newId = crypto.randomUUID();
-
-        const newTab: TabMeta = {
-          id: newId,
-          filename,
-          path,
-          isDirty: false,
-          type: TabType.LOCAL,
-        };
-
-        const flushedCache = flushActiveToCache(state);
-
-        set({
-          tabs: [...tabs, newTab],
-          currentTabId: newId,
-          activeContent: content,
-          contentCache: flushedCache,
-          currentFileInfo: fileInfo,
-          recentFiles: {
-            ...recentFiles,
-            [path]: {
-              id: newId,
-              filename,
-              path,
-              modified: Date.now(),
-            },
-          },
-        });
-      } catch (error) {
-        console.error("Error opening file:", error);
-      }
-    },
-
-    // -----------------------------------------------------------------------
-    // Tab switching
-    // -----------------------------------------------------------------------
-
-    openTab: async (id: string) => {
-      const state = get();
-      const { tabs, currentTabId } = state;
-      if (currentTabId === id) return;
-
-      const tabToOpen = tabs.find((t) => t.id === id);
-      if (!tabToOpen) return;
-
-      // 1. Flush current active content into the cache.
-      const flushedCache = flushActiveToCache(state);
-
-      // 2. Load the target tab's content: from cache → from disk → empty.
-      let newContent: string;
-      let newFileInfo: FileInfo;
-
-      if (flushedCache[id] !== undefined) {
-        newContent = flushedCache[id];
-        // Content came from in-memory cache — derive basic metadata.
-        newFileInfo = fileInfoForUntitled(tabToOpen.filename);
-      } else if (tabToOpen.type === TabType.LOCAL && tabToOpen.path) {
-        try {
-          const result = await openFile(tabToOpen.path);
-          newContent = result?.content ?? "";
-          newFileInfo = result?.fileInfo ?? fileInfoForUntitled(tabToOpen.filename);
-        } catch (error) {
-          console.error("Error loading file:", error);
-          return;
-        }
-      } else {
-        newContent = "";
-        newFileInfo = fileInfoForUntitled(tabToOpen.filename);
-      }
-
-      set({
-        currentTabId: id,
-        activeContent: newContent,
-        // Remove the target from cache since it's now active.
-        contentCache: withoutKey(flushedCache, id),
-        currentFileInfo: newFileInfo,
-      });
-    },
-
-    // -----------------------------------------------------------------------
-    // Tab closing
-    // -----------------------------------------------------------------------
-
-    closeTab: async (id: string, options = {}) => {
-      const state = get();
-      const { tabs, currentTabId, activeContent, contentCache, actions } = state;
-      const tabToClose = tabs.find((t) => t.id === id);
-
-      if (!tabToClose) return true;
-
-      // --- Handle dirty-tab confirmation ---
-      if (tabToClose.isDirty && !options.skipConfirmation) {
-        const userChoice = await ask(`"${tabToClose.filename}" has unsaved changes. Do you want to save before closing?`, {
+  const closeTab = async (id: string, options: { skipConfirmation?: boolean }): Promise<boolean> => {
+    try {
+      await get().actions.initialize();
+      let tab = get().tabs.find((t) => t.id === id);
+      if (!tab) return true;
+      let approvedRevision = editRevisions.get(id) ?? 0;
+      if (tab.isDirty && !options.skipConfirmation) {
+        // Unlike ask(), a three-way message distinguishes discard from dialog cancellation.
+        const choice = await message(`"${tab.filename}" has unsaved changes. Do you want to save before closing?`, {
           title: "Unsaved Changes",
           kind: "warning",
-          okLabel: "Save",
-          cancelLabel: "Don't Save",
+          buttons: { yes: "Save", no: "Don't Save", cancel: "Cancel" },
         });
-
-        if (userChoice === null) return false;
-
-        if (userChoice === true) {
-          // Resolve the content for this specific tab.
-          const tabContent = id === currentTabId ? activeContent : (contentCache[id] ?? "");
-
-          if (tabToClose.type === TabType.LOCAL && tabToClose.path) {
-            await saveFile(tabToClose.path, tabContent);
-          } else {
-            // Untitled tab needs the Save-As flow — must be current for that.
-            if (id !== currentTabId) {
-              await actions.openTab(id);
-            }
-            await actions.saveCurrentFileOnDisk();
+        if (choice === "Save" || choice === "Yes") {
+          if (!await saveTab(id)) return false;
+          if (get().tabs.find((t) => t.id === id)?.isDirty) {
+            throw new Error("The document changed while saving. Please try again.");
           }
+          approvedRevision = editRevisions.get(id) ?? 0;
+        } else if (choice !== "Don't Save" && choice !== "No") {
+          return false;
         }
       }
-
-      // --- Re-read state after potential async operations ---
-      const freshState = get();
-      const freshTabs = freshState.tabs;
-      const freshCurrentTabId = freshState.currentTabId;
-
-      const closedIndex = freshTabs.findIndex((t) => t.id === id);
-      const newTabs = freshTabs.filter((t) => t.id !== id);
-      const newCache = withoutKey(freshState.contentCache, id);
-
-      let newCurrentTabId = freshCurrentTabId;
-      let newActiveContent = freshState.activeContent;
-      let newFileInfo: FileInfo | null = freshState.currentFileInfo;
-
-      if (freshCurrentTabId === id) {
-        // Pick adjacent tab (prefer left, then right, then none).
-        const nextTab = newTabs[closedIndex - 1] ?? newTabs[closedIndex] ?? null;
-        newCurrentTabId = nextTab?.id ?? null;
-
-        if (newCurrentTabId && nextTab) {
-          // Load the new current tab's content.
-          if (newCache[newCurrentTabId] !== undefined) {
-            newActiveContent = newCache[newCurrentTabId];
-            newFileInfo = fileInfoForUntitled(nextTab.filename);
-          } else if (nextTab.type === TabType.LOCAL && nextTab.path) {
-            try {
-              const result = await openFile(nextTab.path);
-              newActiveContent = result?.content ?? "";
-              newFileInfo = result?.fileInfo ?? fileInfoForUntitled(nextTab.filename);
-            } catch {
-              newActiveContent = "";
-              newFileInfo = fileInfoForUntitled(nextTab.filename);
-            }
-          } else {
-            newActiveContent = "";
-            newFileInfo = fileInfoForUntitled(nextTab.filename);
-          }
-        } else {
-          newActiveContent = "";
-          newFileInfo = null;
-        }
-      }
-
-      set({
-        tabs: newTabs,
-        currentTabId: newCurrentTabId,
-        activeContent: newActiveContent,
-        contentCache: withoutKey(newCache, newCurrentTabId ?? ""),
-        currentFileInfo: newFileInfo,
-      });
-      return true;
-    },
-
-    closeCurrentTab: async () => {
-      const { currentTabId, actions } = get();
-      if (!currentTabId) return true;
-      return actions.closeTab(currentTabId);
-    },
-
-    // -----------------------------------------------------------------------
-    // Misc
-    // -----------------------------------------------------------------------
-
-    resetCurrent: () => {
       const state = get();
-      const flushedCache = flushActiveToCache(state);
-      set({
-        currentTabId: null,
-        activeContent: "",
-        contentCache: flushedCache,
-        currentFileInfo: null,
-      });
+      tab = state.tabs.find((t) => t.id === id);
+      if (!tab) return true;
+      if ((editRevisions.get(id) ?? 0) !== approvedRevision) {
+        throw new Error("The document changed while closing. Please try again.");
+      }
+      const request = navigationRequest;
+      const index = state.tabs.findIndex((t) => t.id === id);
+      const remaining = state.tabs.filter((t) => t.id !== id);
+      const nextTab = state.currentTabId === id ? remaining[index - 1] ?? remaining[index] : undefined;
+      const prepared = nextTab ? await prepareTab(nextTab.id) : null;
+
+      const fresh = get();
+      if (!fresh.tabs.some((t) => t.id === id)) return true;
+      if ((editRevisions.get(id) ?? 0) !== approvedRevision) {
+        throw new Error("The document changed while closing. Please try again.");
+      }
+      let next: Partial<State> = {
+        tabs: fresh.tabs.filter((t) => t.id !== id),
+        contentCache: withoutKey(fresh.contentCache, id),
+      };
+      if (fresh.currentTabId === id) {
+        if (request !== navigationRequest) return false;
+        const target = fresh.tabs.find((t) => t.id === nextTab?.id);
+        if (nextTab && (!target || target.path !== nextTab.path || !prepared)) return false;
+        const content = target ? fresh.contentCache[target.id] ?? prepared!.content : "";
+        const fileInfo = target
+          ? fresh.contentCache[target.id] !== undefined ? fileInfoCache.get(target.id) ?? prepared!.fileInfo : prepared!.fileInfo
+          : null;
+        if (target && fileInfo) fileInfoCache.set(target.id, fileInfo);
+        navigationRequest++;
+        next = {
+          ...next,
+          currentTabId: target?.id ?? null,
+          activeContent: content,
+          currentFileInfo: fileInfo,
+          contentCache: withoutKey(next.contentCache!, target?.id ?? ""),
+        };
+      }
+      update(next);
+      editRevisions.delete(id);
+      fileInfoCache.delete(id);
+      return true;
+    } catch (error) {
+      reportError("Unable to close tab", error);
+      return false;
+    }
+  };
+
+  return {
+    tabs: [],
+    currentTabId: null,
+    activeContent: "",
+    contentCache: {},
+    currentFileInfo: null,
+    recentFiles: {},
+    isInitialized: false,
+    initializationError: null,
+    editorError: null,
+    actions: {
+      initialize: () => {
+        if (initialization) return initialization;
+        initialization = (async () => {
+          try {
+            const db = await loadEditorState();
+            if (db.schemaVersion !== "V2" || !db.recentFiles || !db.session) {
+              throw new Error("Invalid editor session.");
+            }
+            const { tabs, contentCache } = deserializeTabs(db.session.tabs);
+            update({ tabs, contentCache, recentFiles: db.recentFiles });
+            sessionLoaded = true;
+            const id = tabs.find((t) => t.id === db.session.currentTabId)?.id;
+            if (id) {
+              try {
+                const prepared = await prepareTab(id);
+                if (prepared) {
+                  fileInfoCache.set(id, prepared.fileInfo);
+                  update({
+                    currentTabId: id,
+                    activeContent: prepared.content,
+                    currentFileInfo: prepared.fileInfo,
+                    contentCache: withoutKey(contentCache, id),
+                  });
+                }
+              } catch (error) {
+                // Keep the tab metadata, but don't expose an empty editable replacement.
+                reportError("Unable to restore active file", error);
+              }
+            }
+          } catch (error) {
+            const text = reportError("Unable to load editor session", error);
+            set({ initializationError: text });
+          } finally {
+            set({ isInitialized: true });
+          }
+        })();
+        return initialization;
+      },
+      persistSession: () => enqueueWrite(async () => {
+        try {
+          await get().actions.initialize();
+          if (!sessionLoaded) {
+            throw new Error(get().initializationError ?? "The existing session could not be loaded. Session saving is disabled.");
+          }
+          // Snapshot at execution time, not queue time. If edits arrive during IPC,
+          // persist them too before allowing a caller (notably window close) to proceed.
+          let savedRevision: number;
+          do {
+            const state = get();
+            savedRevision = revision;
+            const db: DatabaseV2 = {
+              recentFiles: state.recentFiles,
+              session: {
+                tabs: serializeTabs(state.tabs, buildContentMap(state)),
+                currentTabId: state.currentTabId ?? undefined,
+              },
+              schemaVersion: "V2",
+            };
+            await saveEditorState(db);
+          } while (savedRevision !== revision);
+        } catch (error) {
+          reportError("Unable to persist editor session", error);
+          throw error;
+        }
+      }),
+      addBlank: () => {
+        if (!get().isInitialized) {
+          void get().actions.initialize().then(() => get().actions.addBlank());
+          return;
+        }
+        navigationRequest++;
+        const state = get();
+        const id = crypto.randomUUID();
+        const blank: TabMeta = { id, type: TabType.UNTITLED, isDirty: false, filename: "untitled" };
+        fileInfoCache.set(id, { ...DEFAULT_FILE_INFO });
+        update({
+          tabs: [...state.tabs, blank],
+          currentTabId: id,
+          activeContent: "",
+          contentCache: flushActiveToCache(state),
+          currentFileInfo: { ...DEFAULT_FILE_INFO },
+        });
+      },
+      setContent: (content: string) => {
+        const state = get();
+        const tab = state.tabs.find((t) => t.id === state.currentTabId);
+        if (!tab || state.activeContent === content) return;
+        editRevisions.set(tab.id, (editRevisions.get(tab.id) ?? 0) + 1);
+        update(tab.isDirty ? { activeContent: content } : {
+          activeContent: content,
+          tabs: state.tabs.map((t) => t.id === tab.id ? { ...t, isDirty: true } : t),
+        });
+      },
+      saveCurrentFileOnDisk: async () => {
+        const requestedId = get().currentTabId;
+        if (requestedId) {
+          await saveTab(requestedId);
+        } else {
+          await get().actions.initialize();
+          const id = get().currentTabId;
+          if (id) await saveTab(id);
+        }
+      },
+      openLocalFile: async () => {
+        try {
+          const path = await tauriOpen({
+            title: "Open File",
+            filters: [{ name: "Text based files", extensions: ["txt", "md", "json", "html", "css", "js", "ts", "csv", "py", "rs"] }],
+          });
+          if (path) await get().actions.openByPath(path);
+        } catch (error) {
+          reportError("Unable to open file", error);
+        }
+      },
+      openByPath: async (path: string) => {
+        const request = ++navigationRequest;
+        try {
+          await get().actions.initialize();
+          const pendingSave = savingPaths.get(path);
+          if (pendingSave) await pendingSave;
+          const existing = get().tabs.find((t) => t.path === path);
+          if (existing) {
+            await activateTab(existing.id, request);
+            return;
+          }
+          const result = await readFile(path);
+          const state = get();
+          // Concurrent opens share a read and cannot create duplicate tabs.
+          const duplicate = state.tabs.find((t) => t.path === path);
+          if (duplicate) {
+            await activateTab(duplicate.id, request);
+            return;
+          }
+          const id = crypto.randomUUID();
+          const filename = path.split(/[\\/]/).pop() || path;
+          const tab: TabMeta = { id, filename, path, isDirty: false, type: TabType.LOCAL };
+          fileInfoCache.set(id, result.fileInfo);
+          const next: Partial<State> = {
+            tabs: [...state.tabs, tab],
+            recentFiles: { ...state.recentFiles, [path]: { id, filename, path, modified: Date.now() } },
+          };
+          if (request === navigationRequest) {
+            Object.assign(next, {
+              currentTabId: id,
+              activeContent: result.content,
+              currentFileInfo: result.fileInfo,
+              contentCache: flushActiveToCache(state),
+            });
+          }
+          update(next);
+        } catch (error) {
+          reportError(`Unable to open "${path}"`, error);
+        }
+      },
+      openTab: async (id: string) => {
+        const request = ++navigationRequest;
+        try {
+          await get().actions.initialize();
+          await activateTab(id, request);
+        } catch (error) {
+          reportError("Unable to switch tabs", error);
+        }
+      },
+      closeTab: (id, options = {}) => {
+        const pending = closes.get(id);
+        if (pending) return pending;
+        const result = closeTab(id, options);
+        closes.set(id, result);
+        void result.then(() => { if (closes.get(id) === result) closes.delete(id); });
+        return result;
+      },
+      closeCurrentTab: async () => {
+        const id = get().currentTabId;
+        return id ? get().actions.closeTab(id) : true;
+      },
+      resetCurrent: () => {
+        if (!get().isInitialized) {
+          void get().actions.initialize().then(() => get().actions.resetCurrent());
+          return;
+        }
+        navigationRequest++;
+        const state = get();
+        update({ currentTabId: null, activeContent: "", contentCache: flushActiveToCache(state), currentFileInfo: null });
+      },
+      dismissError: () => set({ editorError: null }),
     },
-  },
-}));
+  };
+});
 
-// ---------------------------------------------------------------------------
-// Hooks — each selector is as narrow as possible so that only the
-// components that truly depend on a given piece of state re-render.
-// ---------------------------------------------------------------------------
-
-/**
- * Active document content — only the editor textarea subscribes to this.
- * Updating `activeContent` will NOT cause the tab bar, footer, or any
- * other component to re-render.
- */
+/** Only the editor subscribes to the frequently updated document content. */
 export const useActiveContent = () => useEditorStore((state) => state.activeContent);
 
-/**
- * Metadata of the currently active tab (everything except content).
- * Used by the footer (isDirty indicator) and the editor page (to decide
- * whether to render the editor at all).
- *
- * Returns `null` when no tab is open.
- */
 export const useCurrentTabMeta = () =>
   useEditorStore(
     useShallow((state) => {
@@ -626,32 +510,12 @@ export const useCurrentTabMeta = () =>
     }),
   );
 
-/**
- * File metadata (encoding, line ending, size, extension) for the currently
- * active tab.  Used by the footer's status cells.
- *
- * Returns `null` when no tab is open.
- */
 export const useCurrentFileInfo = () => useEditorStore(useShallow((state) => state.currentFileInfo));
-
-/**
- * Tab metadata list for the tab bar. Since `setContent` never modifies
- * `tabs` (except the one-time isDirty flip), the tab bar is inert while
- * the user types.
- */
 export const useTabsMeta = () => useEditorStore(useShallow((state) => state.tabs));
-
-/** True when at least one tab is open. */
 export const useHasTabs = () => useEditorStore((state) => state.tabs.length > 0);
-
-/** True when the given tab is the active one. */
 export const useIsActiveTab = (tabId: string) => useEditorStore((state) => state.currentTabId === tabId);
-
-/** Recent files map. */
 export const useRecentFiles = () => useEditorStore((state) => state.recentFiles);
-
-/** Stable actions reference (never changes between renders). */
 export const useEditorActions = () => useEditorStore((state) => state.actions);
-
-/** Initialisation flag. */
 export const useIsInitialized = () => useEditorStore((state) => state.isInitialized);
+export const useInitializationError = () => useEditorStore((state) => state.initializationError);
+export const useEditorError = () => useEditorStore((state) => state.editorError);

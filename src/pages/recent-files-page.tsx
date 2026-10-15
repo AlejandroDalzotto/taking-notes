@@ -1,107 +1,174 @@
-import RecentFilesPageLoader from "@/components/recent-files-page-loader";
-import { useRecentFiles, useEditorActions } from "@/stores/editor";
-import { useEffect, useMemo, useState } from "react";
-import { FolderSearch, FileText, Clock } from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion } from "motion/react";
+import { FileText, FolderOpen, FolderSearch, Plus, Search, X } from "lucide-react";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useNavigate } from "react-router";
+import { useRecentFiles, useEditorActions, useIsInitialized } from "@/stores/editor";
+
+const dateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+const fullDateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "long", timeStyle: "short" });
 
 export default function RecentFilesPage() {
   const recentFiles = useRecentFiles();
-  const { openByPath, resetCurrent } = useEditorActions();
+  const { openByPath, addBlank, openLocalFile } = useEditorActions();
+  const isInitialized = useIsInitialized();
   const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const filteredNotes = useMemo(() => {
-    const files = Object.values(recentFiles);
-
-    const sorted = files.sort((a, b) => {
-      return b.modified - a.modified;
-    });
-
-    if (!searchQuery.trim()) return sorted;
-
-    const query = searchQuery.toLowerCase();
-    return sorted.filter((note) => note.filename?.toLowerCase().includes(query));
+    const query = searchQuery.trim().toLocaleLowerCase();
+    return Object.values(recentFiles)
+      .filter((note) => !query || note.filename.toLocaleLowerCase().includes(query) || note.path.toLocaleLowerCase().includes(query))
+      .sort((a, b) => b.modified - a.modified);
   }, [recentFiles, searchQuery]);
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return (
-      date.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" }) +
-      " " +
-      date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    );
+  const runAction = async (label: string, action: () => unknown) => {
+    setError(null);
+    try {
+      await action();
+    } catch (cause) {
+      setError(`${label}: ${cause instanceof Error ? cause.message : String(cause)}`);
+    }
   };
 
-  if (recentFiles === null) {
-    return <RecentFilesPageLoader />;
-  }
-
-  useEffect(() => {
-    resetCurrent();
-  }, []);
-
   return (
-    <div className="h-full relative flex flex-col text-sm bg-neutral-950">
-      <div className="w-full border-b border-neutral-800 p-4">
-        <h1 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-blue-400" />
-          Recent Files
-        </h1>
-        <input
-          className="w-full px-3 py-2 rounded-md border border-neutral-800 outline-none text-neutral-50 bg-neutral-900 placeholder:text-neutral-600 focus:border-blue-500/50 transition-colors"
-          placeholder="Search recent files..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      <div className="overflow-y-auto custom-scrollbar flex-1 p-2">
-        {filteredNotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-neutral-500">
-            <FileText className="w-12 h-12 mb-4 opacity-20" />
-            <p>No recent files found</p>
-          </div>
-        ) : (
-          filteredNotes.map((note) => (
-            <div
-              onClick={() => {
-                openByPath(note.path);
+    <div className="h-full min-h-0 overflow-y-auto bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
+      <motion.section
+        aria-labelledby="workspace-heading"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.24 }}
+        className="mx-auto w-full max-w-4xl px-6 py-10 sm:px-12 sm:py-14"
+      >
+        <header className="mb-10">
+          <p className="eyebrow mb-4">YOUR WORKSPACE</p>
+          <h1 id="workspace-heading" className="max-w-xl font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
+            Pick up where you left off.
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">Your recent files, ready for the next thought.</p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="primary-button inline-flex items-center gap-2 px-4 py-2 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              onClick={() => void runAction("Unable to create note", () => {
+                addBlank();
                 navigate("/");
-              }}
-              className="flex cursor-pointer justify-between items-center py-3 px-3 hover:bg-white/5 rounded-md mb-1 group transition-colors"
-              key={note.path}
+              })}
             >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="p-2 rounded bg-neutral-900 text-neutral-400 group-hover:text-blue-400 transition-colors">
-                  <FileText className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-neutral-100 font-medium truncate">{note.filename}</p>
-                  <p className="text-neutral-500 text-xs truncate" title={note.path}>
-                    {note.path}
-                  </p>
-                  <p className="text-neutral-600 text-[10px] mt-0.5">{formatDate(note.modified)}</p>
-                </div>
-              </div>
+              <Plus size={15} aria-hidden="true" />
+              New note
+            </button>
+            <button
+              type="button"
+              className="quiet-button inline-flex items-center gap-2 px-3 py-2 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              onClick={() => void runAction("Unable to open file", async () => {
+                await openLocalFile();
+                navigate("/");
+              })}
+            >
+              <FolderOpen size={15} aria-hidden="true" />
+              Open file
+            </button>
+          </div>
+        </header>
 
-              <button
-                className="h-fit p-2 cursor-pointer rounded-md border border-neutral-800 text-neutral-600 hover:text-neutral-50 hover:border-neutral-600 hover:bg-neutral-800 opacity-0 group-hover:opacity-100"
-                style={{
-                  transition: "color 150ms ease, border-color 150ms ease, background-color 150ms ease, transform 150ms ease, opacity 150ms ease",
-                }}
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  await revealItemInDir(note.path);
-                }}
-                title="Reveal in file explorer"
-              >
-                <FolderSearch className="w-4 h-4" />
-              </button>
-            </div>
-          ))
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+          <h2 className="eyebrow">RECENT FILES</h2>
+          <div role="search" className="relative w-full sm:w-72">
+            <label htmlFor="recent-files-search" className="sr-only">Search recent filenames and paths</label>
+            <Search size={15} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <input
+              id="recent-files-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Find a file or path…"
+              className="surface-input w-full rounded-lg py-2 pl-9 pr-3 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              autoComplete="off"
+              spellCheck={false}
+              aria-controls="recent-files-list"
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div role="alert" className="mb-4 flex items-start justify-between gap-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3 text-xs text-[var(--color-danger)]">
+            <p className="min-w-0 break-words leading-relaxed">{error}</p>
+            <button type="button" className="icon-button shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]" aria-label="Dismiss file error" onClick={() => setError(null)}>
+              <X size={14} aria-hidden="true" />
+            </button>
+          </div>
         )}
-      </div>
+
+        <div id="recent-files-list" aria-busy={!isInitialized} className="border-t border-[var(--color-border)]">
+          {!isInitialized ? (
+            <p role="status" className="py-12 text-sm text-[var(--color-text-muted)]">Loading your workspace…</p>
+          ) : filteredNotes.length === 0 ? (
+            <div className="flex flex-col items-center rounded-lg py-14 text-center">
+              <FileText size={28} strokeWidth={1.25} aria-hidden="true" className="mb-4 text-[var(--color-text-muted)]" />
+              <p className="text-sm">{searchQuery.trim() ? "No matching files." : "A fresh page awaits."}</p>
+              <p className="mt-2 max-w-xs text-xs leading-relaxed text-[var(--color-text-muted)]">
+                {searchQuery.trim() ? "Try another filename or a different part of the path." : "Create a note or open a local file. It will be here when you return."}
+              </p>
+              {searchQuery.trim() && (
+                <button type="button" className="quiet-button mt-4 px-3 py-2 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]" onClick={() => setSearchQuery("")}>Clear search</button>
+              )}
+            </div>
+          ) : (
+            <ul className="divide-y divide-[var(--color-border)]">
+              {filteredNotes.map((note) => {
+                const date = new Date(note.modified);
+                const validDate = Number.isFinite(date.getTime());
+                return (
+                  <li key={note.path} className="group flex items-center gap-2 py-1">
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 cursor-pointer items-center gap-4 rounded-lg px-2 py-4 text-left hover:bg-[var(--color-bg-secondary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:gap-5"
+                      onClick={() => void runAction(`Unable to open ${note.filename}`, async () => {
+                        await openByPath(note.path);
+                        navigate("/");
+                      })}
+                    >
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]">
+                        <FileText size={17} strokeWidth={1.5} aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{note.filename}</span>
+                        <span className="mt-1 block truncate text-[11px] text-[var(--color-text-muted)]" title={note.path}>{note.path}</span>
+                        {validDate && (
+                          <time dateTime={date.toISOString()} title={fullDateFormatter.format(date)} className="mt-1.5 block text-[10px] text-[var(--color-text-secondary)] sm:hidden">
+                            {dateFormatter.format(date)}
+                          </time>
+                        )}
+                      </span>
+                      {validDate && (
+                        <time dateTime={date.toISOString()} title={fullDateFormatter.format(date)} className="hidden shrink-0 text-[11px] tabular-nums text-[var(--color-text-muted)] sm:block">
+                          {dateFormatter.format(date)}
+                        </time>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button mr-1 shrink-0 rounded-md p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                      aria-label={`Reveal ${note.filename} in file explorer`}
+                      title="Reveal in file explorer"
+                      onClick={() => void runAction(`Unable to reveal ${note.filename} in file explorer`, () => revealItemInDir(note.path))}
+                    >
+                      <FolderSearch size={16} strokeWidth={1.5} aria-hidden="true" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+        {isInitialized && filteredNotes.length > 0 && (
+          <p role="status" className="mt-4 text-[10px] text-[var(--color-text-muted)]">
+            {filteredNotes.length} {filteredNotes.length === 1 ? "file" : "files"}{searchQuery.trim() ? " found" : " · Stored on your device"}
+          </p>
+        )}
+      </motion.section>
     </div>
   );
 }

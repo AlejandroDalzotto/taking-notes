@@ -27,13 +27,20 @@ export async function saveEditorState(state: DatabaseV2): Promise<void> {
  *  - untitled tabs (no backing file at all)
  */
 export function serializeTabs(tabs: TabMeta[], contentMap: Record<string, string>): SessionTab[] {
-  return tabs.map((tab) => ({
-    id: tab.id,
-    path: tab.type === TabType.LOCAL ? tab.path : undefined,
-    filename: tab.filename,
-    isDirty: tab.isDirty,
-    content: tab.isDirty || tab.type === TabType.UNTITLED ? (contentMap[tab.id] ?? "") : undefined,
-  }));
+  return tabs.map((tab) => {
+    const needsContent = tab.isDirty || tab.type === TabType.UNTITLED;
+    const content = contentMap[tab.id];
+    if (needsContent && content === undefined) {
+      throw new Error(`Unsaved content for "${tab.filename}" is unavailable; session saving was canceled.`);
+    }
+    return {
+      id: tab.id,
+      path: tab.type === TabType.LOCAL ? tab.path : undefined,
+      filename: tab.filename,
+      isDirty: tab.isDirty,
+      content: needsContent ? content : undefined,
+    };
+  });
 }
 
 /**
@@ -50,7 +57,15 @@ export function deserializeTabs(sessionTabs: SessionTab[]): {
   const tabs: TabMeta[] = [];
   const contentCache: Record<string, string> = {};
 
+  const ids = new Set<string>();
   for (const st of sessionTabs) {
+    if (!st.id || ids.has(st.id) || typeof st.filename !== "string" || typeof st.isDirty !== "boolean" ||
+        (st.path !== undefined && typeof st.path !== "string") ||
+        (st.content !== undefined && typeof st.content !== "string") ||
+        (st.isDirty && st.content === undefined)) {
+      throw new Error("Invalid editor session tab or missing unsaved content.");
+    }
+    ids.add(st.id);
     tabs.push({
       id: st.id,
       type: st.path ? TabType.LOCAL : TabType.UNTITLED,
@@ -59,8 +74,10 @@ export function deserializeTabs(sessionTabs: SessionTab[]): {
       isDirty: st.isDirty,
     });
 
-    if (st.content !== undefined) {
+    if (st.content !== undefined && (st.isDirty || !st.path)) {
       contentCache[st.id] = st.content;
+    } else if (!st.path) {
+      contentCache[st.id] = "";
     }
   }
 
@@ -76,16 +93,16 @@ export async function checkForMigrationToV2(): Promise<boolean> {
   return needs;
 }
 
-export async function migrateV1ToV2(): Promise<boolean> {
-  const result = await invoke<boolean>("migrate_v1_to_v2");
+export async function migrateV1ToV2(): Promise<string> {
+  const result = await invoke<string>("migrate_v1_to_v2");
   return result;
 }
 
 /**
- * Drain and return file paths that were passed via CLI arguments on cold start
- * (e.g. the user right-clicked a file and chose "Open with Taking Notes").
- *
- * This is a one-shot command — subsequent calls return an empty array.
+ * Drain queued absolute paths from cold-start and subsequent CLI launches.
+ * The `open-files` event is a null notification to drain this queue, not a payload.
+ * Register the listener before the initial drain so arrivals cannot be missed.
+ * Later calls return new arrivals, or an empty array if the queue is empty.
  */
 export async function takeCliFilePaths(): Promise<string[]> {
   return await invoke<string[]>("take_cli_file_paths");

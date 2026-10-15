@@ -1,56 +1,36 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useEditorActions } from "@/stores/editor";
+import { useSettingsActions } from "@/stores/settings";
+import { useUpdaterStatus } from "@/stores/updater";
 
-function normalizeShortcut(e: KeyboardEvent) {
-  const keys = [];
-
-  if (e.ctrlKey) keys.push("ctrl");
-  if (e.metaKey) keys.push("meta");
-  if (e.altKey) keys.push("alt");
-  if (e.shiftKey) keys.push("shift");
-
-  keys.push(e.key.toLowerCase());
-
-  return keys.join("+");
-}
-
-export default function GlobalShortcutProvider() {
+export default function ShortcutProvider() {
   const { addBlank, openLocalFile, saveCurrentFileOnDisk, closeCurrentTab } = useEditorActions();
+  const { toggleSidebar, increaseEditorFontSize, decreaseEditorFontSize, resetFontSize } = useSettingsActions();
   const navigate = useNavigate();
+  const updateStatus = useUpdaterStatus();
 
-  /**
-   * List of shortcuts:
-   * - Ctrl+T: Add a new blank file
-   * - Ctrl+O: Open a local file
-   * - Ctrl+S: Save the current file on disk
-   * - Ctrl+W: Close the current tab
-   */
-  const shortcuts: Record<string, () => void> = {
-    "ctrl+t": () => {
-      addBlank();
-      navigate("/");
-    },
-    "ctrl+o": () => openLocalFile(),
-    "ctrl+s": () => saveCurrentFileOnDisk(),
-    "ctrl+w": () => closeCurrentTab(),
-  };
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const key = normalizeShortcut(e);
-      const handler = shortcuts[key];
-      if (handler) {
-        e.preventDefault();
-        handler();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (updateStatus === "downloading" || !(event.ctrlKey || event.metaKey) || event.altKey || event.isComposing) return;
+      const key = event.key.toLowerCase();
+      if (event.shiftKey && !["+", "="].includes(key)) return;
+      switch (key) {
+        case "n":
+        case "t": event.preventDefault(); addBlank(); navigate("/"); break;
+        case "o": event.preventDefault(); navigate("/"); void openLocalFile(); break;
+        case "s": event.preventDefault(); void saveCurrentFileOnDisk(); break;
+        case "w": event.preventDefault(); void closeCurrentTab(); break;
+        case "b": event.preventDefault(); toggleSidebar(); break;
+        case "+":
+        case "=": event.preventDefault(); increaseEditorFontSize(1); break;
+        case "-": event.preventDefault(); decreaseEditorFontSize(1); break;
+        case "0": event.preventDefault(); resetFontSize(); break;
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [addBlank, openLocalFile, saveCurrentFileOnDisk, closeCurrentTab, toggleSidebar, increaseEditorFontSize, decreaseEditorFontSize, resetFontSize, navigate, updateStatus]);
 
   return null;
 }

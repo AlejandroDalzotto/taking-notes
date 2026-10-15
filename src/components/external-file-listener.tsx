@@ -1,38 +1,59 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { useEditorActions } from "@/stores/editor";
 import { useNavigate } from "react-router";
+import { takeCliFilePaths } from "@/lib/commands";
+import { useEditorActions, useEditorStore } from "@/stores/editor";
+import { useMigrationStatus } from "@/stores/migration";
 
-/**
- * Invisible component that listens for the `open-files` event emitted by
- * the Rust single-instance plugin when a second instance of the app is
- * launched (e.g. the user right-clicks a file and chooses "Open with
- * Taking Notes" while the app is already running).
- *
- * The single-instance plugin prevents the second instance from starting
- * and forwards its CLI arguments to the running instance via this event.
- */
 export default function ExternalFileListener() {
-  const { openByPath } = useEditorActions();
+  const { initialize, openByPath } = useEditorActions();
+  const migrationStatus = useMigrationStatus();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unlisten = listen<string[]>("open-files", async (event) => {
-      const paths = event.payload;
-      if (paths.length === 0) return;
+    if (migrationStatus !== "complete") return;
+    let disposed = false;
+    let ready = false;
+    let unlisten: (() => void) | undefined;
+    let work = Promise.resolve();
+    const drain = () => {
+      if (!ready || disposed) return;
+      work = work
+        .then(async () => {
+          if (disposed) return;
+          const paths = await takeCliFilePaths();
+          for (const path of paths) {
+            if (disposed) return;
+            await openByPath(path);
+          }
+          if (paths.length && !disposed) navigate("/");
+        })
+        .catch((error) => {
+          useEditorStore.setState({ editorError: `Unable to open launch files: ${String(error)}` });
+        });
+    };
 
-      for (const path of paths) {
-        await openByPath(path);
+    void (async () => {
+      // Register before draining: Rust keeps paths queued even before React mounts.
+      unlisten = await listen("open-files", drain);
+      if (disposed) {
+        unlisten();
+        return;
       }
-
-      // Navigate to the editor so the newly opened file is visible.
-      navigate("/");
+      await initialize();
+      ready = true;
+      drain();
+    })().catch((error) => {
+      useEditorStore.setState({ editorError: `Unable to register file opening: ${String(error)}` });
+      // Listener setup must not prevent access to the editor and its recovery data.
+      if (!disposed) void initialize();
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      disposed = true;
+      unlisten?.();
     };
-  }, []);
+  }, [migrationStatus, initialize, openByPath, navigate]);
 
   return null;
 }

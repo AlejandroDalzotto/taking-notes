@@ -1,68 +1,55 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Minimize, Maximize, X } from "lucide-react";
-import { useEffect } from "react";
-import { useEditorActions } from "@/stores/editor";
+import { Minus, Square, X } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { ask } from "@tauri-apps/plugin-dialog";
+import { useMigrationStatus } from "@/stores/migration";
+import { useEditorActions, useEditorStore } from "@/stores/editor";
 
 export default function WindowControls() {
   const { persistSession } = useEditorActions();
+  const migrationStatus = useMigrationStatus();
+  const closing = useRef(false);
 
   useEffect(() => {
     const appWindow = getCurrentWindow();
 
-    const handleMinimize = () => appWindow.minimize();
-    const handleMaximize = () => appWindow.toggleMaximize();
-    const handleClose = () => appWindow.close();
-
-    document.getElementById("titlebar-minimize")?.addEventListener("click", handleMinimize);
-    document.getElementById("titlebar-maximize")?.addEventListener("click", handleMaximize);
-    document.getElementById("titlebar-close")?.addEventListener("click", handleClose);
-
-    const unlisten = appWindow.onCloseRequested(async () => {
-      await persistSession();
+    const unlisten = appWindow.onCloseRequested((event) => {
+      // Tauri doesn't wait for an async handler before destroying the window.
+      event.preventDefault();
+      if (closing.current) return;
+      closing.current = true;
+      void (async () => {
+        try {
+          const state = useEditorStore.getState();
+          if (migrationStatus !== "complete" || state.initializationError) {
+            const confirmed = await ask("Session recovery is not available. Save any new work to a file before exiting. Close without changing the existing recovery data?", {
+              title: "Close Taking Notes?", kind: "warning", okLabel: "Close without recovery", cancelLabel: "Keep open",
+            });
+            if (!confirmed) { closing.current = false; return; }
+          } else {
+            await persistSession();
+          }
+          await appWindow.destroy();
+        } catch (error) {
+          useEditorStore.setState({ editorError: `The window stayed open to protect your notes. ${String(error)}` });
+          closing.current = false;
+        }
+      })();
     });
+    return () => { void unlisten.then((dispose) => dispose()).catch(console.error); };
+  }, [persistSession, migrationStatus]);
 
-    return () => {
-      document.getElementById("titlebar-minimize")?.removeEventListener("click", handleMinimize);
-      document.getElementById("titlebar-maximize")?.removeEventListener("click", handleMaximize);
-      document.getElementById("titlebar-close")?.removeEventListener("click", handleClose);
-      unlisten.then((f) => f());
-    };
-  }, []);
+  const run = (action: "minimize" | "toggleMaximize" | "close") => {
+    void getCurrentWindow()[action]().catch((error) => {
+      useEditorStore.setState({ editorError: `Window action failed: ${String(error)}` });
+    });
+  };
 
   return (
-    <div className="relative z-10">
-      <div className="flex gap-x-2 ml-2 shrink-0">
-        <button
-          id="titlebar-minimize"
-          className="appearance-none inline-flex justify-center items-center w-7 h-7 bg-transparent hover:bg-white/10 rounded  hover:text-neutral-50 text-neutral-300 active:scale-90 hover:scale-105"
-          title="minimize"
-          style={{
-            transition: "color 150ms ease, background-color 150ms ease, transform 150ms ease",
-          }}
-        >
-          <Minimize className="w-3.5 h-3.5" />
-        </button>
-        <button
-          id="titlebar-maximize"
-          title="maximize"
-          style={{
-            transition: "color 150ms ease, background-color 150ms ease, transform 150ms ease",
-          }}
-          className="appearance-none inline-flex justify-center items-center w-7 h-7 bg-transparent hover:bg-white/10 rounded hover:text-neutral-50 text-neutral-300 active:scale-90 hover:scale-105"
-        >
-          <Maximize className="w-3.5 h-3.5" />
-        </button>
-        <button
-          id="titlebar-close"
-          title="close"
-          style={{
-            transition: "color 150ms ease, background-color 150ms ease, transform 150ms ease",
-          }}
-          className="appearance-none inline-flex justify-center items-center w-7 h-7 bg-transparent hover:bg-red-500/10 rounded hover:text-red-500 text-neutral-300 active:scale-90 hover:scale-105"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
+    <div className="window-controls">
+      <button className="window-control" onClick={() => run("minimize")} aria-label="Minimize window" title="Minimize"><Minus size={14} /></button>
+      <button className="window-control" onClick={() => run("toggleMaximize")} aria-label="Maximize or restore window" title="Maximize / restore"><Square size={12} /></button>
+      <button className="window-control window-close" onClick={() => run("close")} aria-label="Close window" title="Close"><X size={16} /></button>
     </div>
   );
 }

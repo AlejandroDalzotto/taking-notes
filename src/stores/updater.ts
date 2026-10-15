@@ -1,63 +1,53 @@
 import { create } from "zustand";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
+import { ask, message } from "@tauri-apps/plugin-dialog";
+import { useEditorStore } from "@/stores/editor";
 
 type UpdaterStatus = "idle" | "checking" | "downloading" | "complete" | "no-update" | "error";
-
 interface UpdaterStore {
   status: UpdaterStatus;
   error: string | null;
-  actions: {
-    checkForUpdates: () => Promise<void>;
-  };
+  actions: { checkForUpdates: () => Promise<void> };
 }
 
-const useUpdaterStore = create<UpdaterStore>((set) => ({
+const useUpdaterStore = create<UpdaterStore>((set, get) => ({
   status: "idle",
   error: null,
-  updateInfo: null,
-
   actions: {
     checkForUpdates: async () => {
-      set({ status: "checking" });
-
+      if (["checking", "downloading"].includes(get().status)) return;
+      set({ status: "checking", error: null });
+      let update: Awaited<ReturnType<typeof check>> = null;
       try {
-        // check if the application is running in dev mode before checking for updates
-        const isDev = process.env.NODE_ENV === "development";
-
-        if (isDev) {
-          // we do not check for updates in development mode
-          // yet we let the app to perform migration checks if needed by setting status to "no-update".
-          set({ status: "no-update" });
-          return;
-        }
-
-        // check for updates
-        const update = await check();
+        // This action is invoked only from Help, never during app initialization.
+        update = await check({ timeout: 15000 });
         if (!update) {
           set({ status: "no-update" });
+          await message("You're using the latest version of Taking Notes.", { title: "No updates available", kind: "info" });
           return;
         }
-
-        if (update.version != update.currentVersion) {
-          set({ status: "downloading" });
-
-          // alternatively we could also call update.download() and update.install() separately
-          await update.downloadAndInstall();
-
-          set({ status: "complete" });
-          await relaunch();
-        } else {
-          set({ status: "no-update" });
-        }
-      } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : "Unknown error occurred";
-        set({ status: "error", error: errorMessage });
+        const install = await ask(`Version ${update.version} is available. Download and restart now? Your local session will be saved first.`, {
+          title: "Update Taking Notes", kind: "info", okLabel: "Update & restart", cancelLabel: "Not now",
+        });
+        if (!install) { set({ status: "idle" }); return; }
+        // Freeze editing before taking the final snapshot: the Windows installer
+        // may exit the process before downloadAndInstall resolves.
+        set({ status: "downloading" });
+        await useEditorStore.getState().actions.persistSession();
+        await update.downloadAndInstall();
+        set({ status: "complete" });
+        await relaunch();
+      } catch (cause) {
+        const error = cause instanceof Error ? cause.message : String(cause);
+        set({ status: "error", error });
+        useEditorStore.setState({ editorError: `Unable to update. Your notes are still available offline. ${error}` });
+      } finally {
+        await update?.close().catch(console.error);
       }
     },
   },
 }));
 
 export const useCheckForUpdates = () => useUpdaterStore((state) => state.actions.checkForUpdates);
-
 export const useUpdaterStatus = () => useUpdaterStore((state) => state.status);

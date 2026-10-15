@@ -1,58 +1,53 @@
-import { useCurrentTabMeta, useCurrentFileInfo, useIsInitialized } from "@/stores/editor";
-
-/**
- * Format a byte count into a human-readable string.
- * e.g. 0 → "0 B", 1023 → "1023 B", 1024 → "1.0 KB", 1048576 → "1.0 MB"
- */
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function FooterCell({ children }: { children: React.ReactNode }) {
-  return <span className="border-l border-neutral-800 pl-2 pr-4 text-xs text-neutral-400 whitespace-nowrap">{children}</span>;
-}
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
+import { useActiveContent, useCurrentTabMeta, useCurrentFileInfo, useIsInitialized } from "@/stores/editor";
 
 export default function Footer() {
   const currentTab = useCurrentTabMeta();
   const fileInfo = useCurrentFileInfo();
-  const isInitialized = useIsInitialized();
+  const initialized = useIsInitialized();
+  const content = useDeferredValue(useActiveContent());
+  const [version, setVersion] = useState<string | null>(null);
+  const stats = useMemo(
+    () => ({
+      words: content.match(/\S+/g)?.length ?? 0,
+      characters: content.length - (content.match(/\r\n/g)?.length ?? 0),
+    }),
+    [content],
+  );
+
+  useEffect(() => {
+    void getVersion().then(setVersion).catch(console.error);
+  }, []);
 
   return (
-    <footer className="row-span-3 flex bg-neutral-950 text-sm text-neutral-200 ring-1 ring-neutral-800 justify-between items-center px-2 py-1.5 relative select-none">
-      {/* Left side — file metadata */}
-      <div className="flex items-center gap-0 overflow-hidden">
-        {!isInitialized ? (
-          <span className="text-xs text-neutral-500">Initializing...</span>
-        ) : currentTab && fileInfo ? (
-          <>
-            {currentTab.isDirty && (
-              <FooterCell>
-                <span className="text-blue-400">Modified</span>
-              </FooterCell>
-            )}
-
-            {fileInfo.extension && <FooterCell>.{fileInfo.extension}</FooterCell>}
-
-            <FooterCell>{fileInfo.lineEnding === "N/A" ? "—" : fileInfo.lineEnding}</FooterCell>
-
-            <FooterCell>{fileInfo.encoding}</FooterCell>
-
-            <FooterCell>{formatFileSize(fileInfo.fileSize)}</FooterCell>
-          </>
-        ) : currentTab ? (
-          // Tab open but no file info yet (edge case during load)
-          <span className="text-xs text-neutral-500">Loading...</span>
-        ) : (
-          // No tab open at all
-          <span className="text-xs text-neutral-600">No file open</span>
-        )}
+    <footer className="flex h-8 shrink-0 select-none items-center justify-between gap-3 border-t border-line bg-surface px-4 text-[10px] text-muted">
+      <div className="flex min-w-0 items-center gap-2 [&>span:last-child]:truncate">
+        <span className="size-1 shrink-0 rounded-full bg-accent" />
+        <span>
+          {!initialized
+            ? "Opening your workspace"
+            : currentTab?.isDirty
+              ? "Unsaved changes"
+              : currentTab
+                ? currentTab.path
+                  ? "Saved to file"
+                  : "Local draft"
+                : "Local-first. Always yours."}
+        </span>
       </div>
-
-      {/* Right side — app version */}
-      <div className="flex items-center shrink-0">
-        <FooterCell>v1.2.1</FooterCell>
+      <div className="flex shrink-0 items-center gap-3 whitespace-nowrap font-mono text-[9px] tabular-nums sm:gap-4">
+        {currentTab && (
+          <>
+            <span>
+              {stats.words.toLocaleString()} {stats.words === 1 ? "word" : "words"}
+            </span>
+            <span className="hidden md:inline">{stats.characters.toLocaleString()} characters</span>
+            <span>{fileInfo?.encoding ?? "UTF-8"}</span>
+            {fileInfo && fileInfo.lineEnding !== "N/A" && <span>{fileInfo.lineEnding}</span>}
+          </>
+        )}
+        {version && <span className="hidden border-l border-line pl-3 text-muted/70 sm:inline sm:pl-4">v{version}</span>}
       </div>
     </footer>
   );

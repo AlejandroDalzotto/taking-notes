@@ -11,10 +11,14 @@ A desktop note-taking app built with Tauri and React. Designed to bring modern e
 ## Features
 
 - Full CRUD support for plain-text notes.
-- Multi-tab support for working with multiple files at once.
-- Automatic session saving on close and seamless recovery on launch to prevent data loss.
-- Automatic updates via GitHub Releases.
-- Dark mode enabled by default.
+- A collapsible sidebar for working with multiple open notes.
+- Local recovery snapshots while editing and on close, with session restoration on launch.
+- Native file drag and drop and file opening from launch arguments or shell associations.
+- Light, Dark, and Cream themes, with locally saved appearance and text-size preferences.
+- Searchable recent files, word and character counts, and keyboard shortcuts.
+- Motion animations that respect reduced-motion preferences.
+- Offline startup and editing, without accounts or required network requests.
+- Optional update checks via GitHub Releases from the Help menu.
 - Responsive layout optimized for different screen sizes.
 
 ## Inspiration
@@ -23,4 +27,25 @@ The Windows 10 Notepad works, but it lacks features that Windows 11 introduced, 
 
 ## Releases
 
-Taking Notes uses the [Tauri Updater plugin](https://tauri.app/plugin/updater/) combined with GitHub Releases to deliver automatic updates. When a new version is available, the app detects it on launch and prompts the user to update without needing to manually download or reinstall anything.
+Taking Notes uses the [Tauri Updater plugin](https://tauri.app/plugin/updater/) with GitHub Releases. Choose **Help → Check for updates…** to check for a new version. This optional action uses the internet; startup, note editing, and recovery do not. Available updates are installed only after confirmation, with the local session saved before restarting.
+
+## Keyboard shortcuts
+
+| Action | Shortcut |
+| --- | --- |
+| New note | `Ctrl+N` or `Ctrl+T` |
+| Open file | `Ctrl+O` |
+| Save file | `Ctrl+S` |
+| Close note | `Ctrl+W` |
+| Toggle sidebar | `Ctrl+B` |
+| Increase / decrease text size | `Ctrl++` / `Ctrl+-` |
+| Reset text size | `Ctrl+0` |
+
+## Development checks
+
+```sh
+npm test
+npm run build
+```
+
+From `src-tauri`, run `cargo test --locked --lib` for backend regression tests. Native launch, recovery, and file-handling details are documented in [BACKEND.md](src-tauri/BACKEND.md).

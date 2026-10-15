@@ -1,14 +1,301 @@
 @import "tailwindcss";
 
-:root {
-    /* Loading variables */
+:root,
+[data-theme="dark"] {
+    color-scheme: dark;
+    --color-bg-primary: #202123;
+    --color-bg-secondary: #1b1c1e;
+    --color-bg-tertiary: #2a2b2d;
+    --color-text-primary: #e8e5df;
+    --color-text-secondary: #b5b2ab;
+    --color-text-muted: #96938d;
+    --color-border: #363739;
+    --color-accent: #c4b18a;
+    --color-danger: #ed9690;
+    --color-on-accent: #24211b;
+    --color-scrollbar: #505052;
+    --color-scrollbar-hover: #70706e;
+    --color-paper: #292a2b;
+    --color-paper-line: #62615c;
+    --color-selection: #c4b18a38;
     --uib-size: 37px;
-    --uib-color: oklch(98.5% 0 0);
+    --uib-color: var(--color-text-primary);
     --uib-speed: 0.9s;
     --uib-bg-opacity: 0.1;
 }
 
-/* Loading classes */
+[data-theme="light"] {
+    color-scheme: light;
+    --color-bg-primary: #fafaf9;
+    --color-bg-secondary: #f1f1ef;
+    --color-bg-tertiary: #e9e9e6;
+    --color-text-primary: #292a28;
+    --color-text-secondary: #5e605b;
+    --color-text-muted: #73746e;
+    --color-border: #dedfda;
+    --color-accent: #766345;
+    --color-danger: #b6413b;
+    --color-on-accent: #fffdf7;
+    --color-scrollbar: #c2c3bc;
+    --color-scrollbar-hover: #a0a198;
+    --color-paper: #ffffff;
+    --color-paper-line: #b2b2a8;
+    --color-selection: #76634526;
+}
+
+[data-theme="cream"] {
+    color-scheme: light;
+    --color-bg-primary: #f2ecdf;
+    --color-bg-secondary: #eae2d3;
+    --color-bg-tertiary: #e3d9c6;
+    --color-text-primary: #3c352b;
+    --color-text-secondary: #6a6051;
+    --color-text-muted: #797063;
+    --color-border: #d8cebb;
+    --color-accent: #79613f;
+    --color-danger: #a63f35;
+    --color-on-accent: #fff9ed;
+    --color-scrollbar: #c6baa4;
+    --color-scrollbar-hover: #a99a7e;
+    --color-paper: #f9f3e7;
+    --color-paper-line: #b5a68b;
+    --color-selection: #79613f28;
+}
+
+@theme {
+    --color-accent: #c4b18a;
+    --color-danger: #ed9690;
+    --color-on-accent: #24211b;
+}
+
+@theme inline {
+    --color-surface: var(--color-bg-primary);
+    --color-sidebar: var(--color-bg-secondary);
+    --color-elevated: var(--color-bg-tertiary);
+    --color-ink: var(--color-text-primary);
+    --color-secondary: var(--color-text-secondary);
+    --color-muted: var(--color-text-muted);
+    --color-line: var(--color-border);
+
+    --font-sans: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+    --font-serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+@layer base {
+    html,
+    body,
+    #root {
+        @apply h-full min-h-0;
+    }
+
+    body {
+        @apply m-0 bg-surface font-sans text-ink antialiased;
+    }
+
+    button,
+    input,
+    textarea {
+        font: inherit;
+    }
+
+    button:not(:disabled),
+    label:has(input[type="radio"]) {
+        cursor: pointer;
+    }
+
+    button:disabled {
+        @apply cursor-not-allowed opacity-40;
+    }
+
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-accent;
+    }
+
+    ::selection {
+        background: var(--color-selection);
+        color: var(--color-text-primary);
+    }
+
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-scrollbar) transparent;
+    }
+
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--color-scrollbar);
+        border-radius: 999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-scrollbar-hover);
+    }
+
+    ::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+}
+
+/* Shared controls also used by the menu and recent-files page. */
+@layer components {
+    .icon-button {
+        @apply inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-elevated hover:text-ink;
+    }
+
+    .quiet-button {
+        @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs text-secondary transition-colors hover:bg-elevated hover:text-ink;
+    }
+
+    .primary-button {
+        @apply inline-flex items-center justify-center gap-2 rounded-md border border-accent bg-accent px-4 py-2.5 text-xs font-medium text-on-accent transition-colors hover:bg-accent/85;
+    }
+
+    .eyebrow {
+        @apply font-mono text-[9px] font-medium leading-4 tracking-[0.16em] text-muted uppercase;
+    }
+
+    .muted {
+        @apply text-muted;
+    }
+
+    .surface-input {
+        @apply border border-line bg-sidebar text-ink transition-colors placeholder:text-muted hover:border-accent/40;
+    }
+
+    .window-controls {
+        @apply flex h-full shrink-0 items-stretch;
+    }
+
+    .window-control {
+        @apply flex w-10 items-center justify-center rounded-none text-muted transition-colors hover:bg-elevated hover:text-ink focus-visible:-outline-offset-2;
+    }
+
+    .window-close {
+        @apply hover:bg-danger hover:text-surface;
+    }
+
+    .drop-overlay {
+        @apply pointer-events-none fixed inset-0 z-100 flex items-center justify-center bg-surface/85 p-8 backdrop-blur-sm;
+    }
+
+    .drop-card {
+        @apply flex w-full max-w-md flex-col items-center gap-4 rounded-xl border border-dashed border-accent/60 bg-sidebar px-8 py-12 text-center text-secondary shadow-xl;
+    }
+
+    .drop-card > svg {
+        @apply mb-2 text-accent;
+    }
+
+    .drop-card h2 {
+        @apply font-serif text-4xl tracking-tight text-ink;
+    }
+
+    .drop-card > p:last-child {
+        @apply text-xs leading-6;
+    }
+}
+
+/* The paper illustration is intentionally CSS-drawn; layout stays in utilities. */
+.paper-art {
+    position: relative;
+    width: 220px;
+    height: 166px;
+    flex-shrink: 0;
+    color: var(--color-paper-line);
+}
+
+.paper-outline {
+    position: absolute;
+    left: 61px;
+    top: 9px;
+    width: 94px;
+    height: 119px;
+    border: 1px solid var(--color-paper-line);
+    border-radius: 2px;
+    background: var(--color-paper);
+}
+
+.paper-back {
+    transform: translate(-12px, 1px) rotate(-12deg);
+    opacity: 0.5;
+}
+
+.paper-front {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 27px 17px 12px;
+    transform: translate(8px, 0) rotate(8deg);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--color-text-primary) 4%, transparent);
+}
+
+.paper-front i {
+    display: block;
+    height: 1px;
+    background: var(--color-paper-line);
+    opacity: 0.5;
+}
+
+.paper-front i:nth-child(2) {
+    width: 82%;
+}
+
+.paper-front i:nth-child(4) {
+    width: 55%;
+}
+
+.paper-front > span {
+    margin-top: auto;
+    align-self: flex-end;
+    font-family: var(--font-serif);
+    font-size: 17px;
+    font-style: italic;
+    line-height: 1;
+    color: var(--color-accent);
+}
+
+.art-cross {
+    position: absolute;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--color-accent);
+    opacity: 0.65;
+}
+
+.art-cross-one {
+    left: 27px;
+    top: 29px;
+}
+
+.art-cross-two {
+    right: 18px;
+    bottom: 50px;
+    font-size: 12px;
+}
+
+.art-caption {
+    position: absolute;
+    bottom: 0;
+    inset-inline: 0;
+    font-family: var(--font-mono);
+    font-size: 7px;
+    letter-spacing: 0.16em;
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+/* Existing loader hooks remain available to both loading screens. */
 .loading__container {
     height: var(--uib-size);
     width: var(--uib-size);
@@ -43,25 +330,18 @@
     }
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-    height: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(63, 63, 70, 0.5);
-    border-radius: 3px;
-    transition: background 0.2s;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(82, 82, 91, 0.8);
-}
-
 .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(63, 63, 70, 0.5) transparent;
+    scrollbar-color: var(--color-scrollbar) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
